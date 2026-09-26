@@ -6,5 +6,5 @@ export type SendInvitationEmailParams = {
 
 /** Any invitation email backend implements this — console locally/in tests, Resend in production. */
 export interface EmailSender {
-  sendInvitationEmail(params: SendInvitationEmailParams): Promise<void>;
+  sendInvitationEmail: (params: SendInvitationEmailParams) => Promise<void>;
 }

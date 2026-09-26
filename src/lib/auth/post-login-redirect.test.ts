@@ -13,7 +13,7 @@ function fakeSupabase(
     select: () => chain(result),
     eq: () => chain(result),
     limit: () => chain(result),
-    maybeSingle: async () => result,
+    maybeSingle: () => result,
   });
 
   return {

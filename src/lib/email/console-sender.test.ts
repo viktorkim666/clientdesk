@@ -34,11 +34,11 @@ describe("createConsoleEmailSender", () => {
     const lines = (await readFile(outputFile, "utf8")).trim().split("\n");
     expect(lines).toHaveLength(2);
 
-    const first = JSON.parse(lines[0]);
+    const first = JSON.parse(lines[0]) as { to: string; inviteUrl: string };
     expect(first.to).toBe("client-a@clientdesk.test");
     expect(first.inviteUrl).toBe("http://localhost:3000/invite/token-1");
 
-    const second = JSON.parse(lines[1]);
+    const second = JSON.parse(lines[1]) as { to: string; inviteUrl: string };
     expect(second.to).toBe("client-b@clientdesk.test");
     expect(second.inviteUrl).toBe("http://localhost:3000/invite/token-2");
   });

@@ -85,7 +85,7 @@ export function InviteMemberDialog({
             <Select
               value={role}
               onValueChange={(value) => {
-                if (value) setRole(value as WorkspaceRole);
+                if (value) setRole(value);
               }}
             >
               <SelectTrigger id="role">
