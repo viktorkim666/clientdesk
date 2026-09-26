@@ -1,0 +1,13 @@
+.next
+node_modules
+pnpm-lock.yaml
+src/types/database.ts
+test-results
+playwright-report
+blob-report
+playwright/.cache
+coverage
+.local
+supabase/.temp
+supabase/.branches
+next-env.d.ts
