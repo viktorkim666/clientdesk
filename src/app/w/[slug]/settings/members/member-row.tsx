@@ -54,7 +54,7 @@ export function MemberRow({
                   workspaceId,
                   workspaceSlug,
                   member.userId,
-                  value as WorkspaceRole,
+                  value,
                 );
               });
             }}

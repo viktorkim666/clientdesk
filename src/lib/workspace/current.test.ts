@@ -22,11 +22,11 @@ function fakeSupabase(options: {
   const chain = (result: QueryResult) => ({
     select: () => chain(result),
     eq: () => chain(result),
-    maybeSingle: async () => result,
+    maybeSingle: () => result,
   });
 
   const fake = {
-    auth: { getClaims: async () => ({ data: options.claims }) },
+    auth: { getClaims: () => ({ data: options.claims }) },
     from: (table: string) =>
       table === "workspaces"
         ? chain(options.workspaceResult)

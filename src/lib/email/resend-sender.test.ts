@@ -6,10 +6,12 @@ type SendResult =
   | { data: null; error: { message: string } };
 
 const { sendMock } = vi.hoisted(() => ({
-  sendMock: vi.fn<(payload: SendPayload) => Promise<SendResult>>(async () => ({
-    data: { id: "email-1" },
-    error: null,
-  })),
+  sendMock: vi.fn<(payload: SendPayload) => Promise<SendResult>>(() =>
+    Promise.resolve({
+      data: { id: "email-1" },
+      error: null,
+    }),
+  ),
 }));
 
 vi.mock("resend", () => ({

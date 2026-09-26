@@ -14,7 +14,16 @@
     "db:test": "supabase test db",
     "db:types": "supabase gen types typescript --local > src/types/database.ts",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css,yml,yaml}": "prettier --write"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -39,12 +48,16 @@
     "@vitest/coverage-v8": "5.0.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.5.1",
     "prettier": "^3.9.9",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "shadcn": "^4.21.0",
     "supabase": "2.118.0",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "typescript-eslint": "8.70.1",
     "vitest": "5.0.2"
   },
   "packageManager": "pnpm@12.4.1"

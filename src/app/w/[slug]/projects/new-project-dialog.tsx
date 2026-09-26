@@ -89,7 +89,7 @@ export function NewProjectDialog({
             <Select
               value={status}
               onValueChange={(value) => {
-                if (value) setStatus(value as ProjectStatus);
+                if (value) setStatus(value);
               }}
             >
               <SelectTrigger id="status">

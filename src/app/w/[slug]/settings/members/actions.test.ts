@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { EmailSender } from "@/lib/email/types";
 
 const { deleteEqSpy, sendInvitationEmailMock, revalidatePathMock } = vi.hoisted(
   () => ({
-    deleteEqSpy: vi.fn(async () => ({ error: null })),
-    sendInvitationEmailMock: vi.fn(),
+    deleteEqSpy: vi.fn(() => ({ error: null })),
+    sendInvitationEmailMock: vi.fn<EmailSender["sendInvitationEmail"]>(),
     revalidatePathMock: vi.fn(),
   }),
 );
@@ -15,16 +16,16 @@ vi.mock("@/lib/email", () => ({
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({
+  createClient: () => ({
     auth: {
-      getClaims: async () => ({
+      getClaims: () => ({
         data: { claims: { sub: "00000001-0000-0000-0000-000000000001" } },
       }),
     },
     from: () => ({
       insert: () => ({
         select: () => ({
-          single: async () => ({ data: { id: "invitation-1" }, error: null }),
+          single: () => ({ data: { id: "invitation-1" }, error: null }),
         }),
       }),
       delete: () => ({
@@ -108,7 +109,7 @@ describe("inviteMember", () => {
       expect.objectContaining({
         inviteUrl: expect.stringMatching(
           /^http:\/\/localhost:3000\/invite\/.+/,
-        ),
+        ) as string,
       }),
     );
   });
