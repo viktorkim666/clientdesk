@@ -99,7 +99,7 @@ pnpm lint
 pnpm typecheck
 pnpm test              # unit tests (Vitest)
 pnpm supabase db reset # reapply migrations + seed
-pnpm supabase test db  # pgTAP tests (access control, RPCs)
+pnpm db:test           # pgTAP tests (access control, RPCs)
 pnpm test:e2e          # Playwright, requires Supabase running; starts its own dev server on port 3100
 pnpm build
 ```

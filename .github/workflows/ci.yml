@@ -37,7 +37,7 @@ jobs:
         run: pnpm supabase start
 
       - name: pgTAP tests
-        run: pnpm supabase test db
+        run: pnpm db:test
 
       - name: Write .env.local from the local Supabase stack
         run: |
