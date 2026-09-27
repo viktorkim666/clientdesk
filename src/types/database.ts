@@ -138,6 +138,99 @@ export type Database = {
         };
         Relationships: [];
       };
+      project_files: {
+        Row: {
+          created_at: string;
+          id: string;
+          mime_type: string;
+          name: string;
+          project_id: string;
+          size_bytes: number;
+          storage_path: string;
+          uploaded_by: string;
+          workspace_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          mime_type: string;
+          name: string;
+          project_id: string;
+          size_bytes: number;
+          storage_path: string;
+          uploaded_by: string;
+          workspace_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          mime_type?: string;
+          name?: string;
+          project_id?: string;
+          size_bytes?: number;
+          storage_path?: string;
+          uploaded_by?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "project_files_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      project_updates: {
+        Row: {
+          author_id: string;
+          body: string;
+          created_at: string;
+          id: string;
+          project_id: string;
+          workspace_id: string;
+        };
+        Insert: {
+          author_id: string;
+          body: string;
+          created_at?: string;
+          id?: string;
+          project_id: string;
+          workspace_id: string;
+        };
+        Update: {
+          author_id?: string;
+          body?: string;
+          created_at?: string;
+          id?: string;
+          project_id?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_updates_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "project_updates_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       projects: {
         Row: {
           client_id: string;
@@ -173,6 +266,58 @@ export type Database = {
           },
           {
             foreignKeyName: "projects_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      update_comments: {
+        Row: {
+          author_id: string;
+          body: string;
+          created_at: string;
+          id: string;
+          project_id: string;
+          update_id: string;
+          workspace_id: string;
+        };
+        Insert: {
+          author_id: string;
+          body: string;
+          created_at?: string;
+          id?: string;
+          project_id: string;
+          update_id: string;
+          workspace_id: string;
+        };
+        Update: {
+          author_id?: string;
+          body?: string;
+          created_at?: string;
+          id?: string;
+          project_id?: string;
+          update_id?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "update_comments_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "update_comments_update_id_project_id_fkey";
+            columns: ["update_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "project_updates";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "update_comments_workspace_id_fkey";
             columns: ["workspace_id"];
             isOneToOne: false;
             referencedRelation: "workspaces";
@@ -286,6 +431,10 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      project_update_recipients: {
+        Args: { p_project_id: string };
+        Returns: string[];
       };
     };
     Enums: {
