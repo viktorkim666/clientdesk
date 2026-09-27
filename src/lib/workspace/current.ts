@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import type { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
@@ -19,8 +20,14 @@ export type CurrentWorkspace = {
  * 404s for a signed-out visitor, an unknown slug, or a workspace the caller
  * isn't a member of — RLS already hides the row, this just turns "no row"
  * into the right page instead of an empty dashboard.
+ *
+ * The layout and the page under it both call this for the same request, so
+ * it's wrapped in `cache()` below to dedupe the two lookups. `cache()` only
+ * memoizes while called during a render (it dedupes by the exact `supabase`
+ * and `slug` arguments passed in); called directly, as the tests here do, it
+ * just runs the function again - nothing to reset between tests.
  */
-export async function getCurrentWorkspace(
+async function getCurrentWorkspaceUncached(
   supabase: SupabaseServerClient,
   slug: string,
 ): Promise<CurrentWorkspace> {
@@ -65,3 +72,5 @@ export async function getCurrentWorkspace(
     userId: claims.claims.sub,
   };
 }
+
+export const getCurrentWorkspace = cache(getCurrentWorkspaceUncached);
