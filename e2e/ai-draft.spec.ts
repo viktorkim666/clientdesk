@@ -12,9 +12,8 @@ import {
 //
 // Every run through the first test below spends one of this workspace's 50
 // claim_ai_draft calls per day (see supabase/migrations, ai_draft_requests).
-// Local reruns can add up: if this file fails locally with a 429/rate-limit
-// error rather than the assertion it was written for, run
-// `pnpm supabase db reset` to clear the accumulated rows before rerunning.
+// Playwright's globalSetup (e2e/support/global-setup.ts) clears that
+// workspace's rows before the suite runs, so reruns can't exhaust the cap.
 const PRO_OWNER_EMAIL = "ai-draft-owner@clientdesk.test";
 const SEEDED_PASSWORD = "password123";
 

@@ -90,7 +90,7 @@ ANTHROPIC_API_KEY=sk-...
 
 The seed creates a Pro workspace for this feature: `ai-draft-pro-agency`, owner `ai-draft-owner@clientdesk.test`, password `password123`. Sign in, open a project with recent activity and click "Draft update" in the Updates card.
 
-Each local run of `e2e/ai-draft.spec.ts` counts against that workspace's limit of 50 drafts per 24 hours. If the spec fails locally with a rate-limit error, run `pnpm supabase db reset` to clear the `ai_draft_requests` rows.
+Each run of `e2e/ai-draft.spec.ts` counts against that workspace's limit of 50 drafts per 24 hours, but Playwright's global setup clears that workspace's `ai_draft_requests` rows before the suite runs, so reruns can't exhaust the limit.
 
 ## Tests
 
