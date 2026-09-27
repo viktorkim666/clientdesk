@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -64,7 +65,14 @@ export default async function ProjectsPage({
         <TableBody>
           {(projects ?? []).map((project) => (
             <TableRow key={project.id}>
-              <TableCell>{project.name}</TableCell>
+              <TableCell>
+                <Link
+                  href={`/w/${workspace.slug}/projects/${project.id}`}
+                  className="hover:underline"
+                >
+                  {project.name}
+                </Link>
+              </TableCell>
               <TableCell>{project.clients?.name ?? "—"}</TableCell>
               <TableCell>
                 <Badge
