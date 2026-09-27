@@ -11,8 +11,16 @@ const PROJECT_ID = "d0000000-0000-4000-8000-00000000000a";
 const WORKSPACE_ID = "a0000000-0000-4000-8000-000000000001";
 const SINCE = new Date("2026-09-20T00:00:00.000Z");
 
-type UpdateLikeRow = { created_at: string; body: string; author_id: string };
-type FileLikeRow = { created_at: string; name: string; uploaded_by: string };
+type UpdateLikeRow = {
+  created_at: string;
+  body: string;
+  author_id: string | null;
+};
+type FileLikeRow = {
+  created_at: string;
+  name: string;
+  uploaded_by: string | null;
+};
 
 /** Builds a fake `ActivitySupabaseClient` from plain row arrays. */
 function buildFakeSupabase(options: {
@@ -183,6 +191,32 @@ describe("loadProjectActivity", () => {
     expect(activity.items[0]?.text).toBe(second);
     expect(activity.items[1]?.text.endsWith("…")).toBe(true);
     expect(activity.items[1]?.text.length).toBeLessThan(first.length);
+  });
+
+  it('names a null author id "Former member" (their account was deleted)', async () => {
+    const supabase = buildFakeSupabase({
+      updates: [
+        {
+          created_at: "2026-09-25T00:00:00.000Z",
+          body: "Shipped v1",
+          author_id: null,
+        },
+      ],
+      files: [
+        {
+          created_at: "2026-09-24T00:00:00.000Z",
+          name: "brief.pdf",
+          uploaded_by: null,
+        },
+      ],
+    });
+
+    const activity = await loadProjectActivity(supabase, PROJECT_ID, SINCE);
+
+    expect(activity.items.map((item) => item.authorName)).toEqual([
+      "Former member",
+      "Former member",
+    ]);
   });
 
   it("throws when a query returns an error", async () => {

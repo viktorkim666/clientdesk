@@ -8,7 +8,7 @@ export type CommentRowData = {
   id: string;
   body: string;
   createdAt: string;
-  authorId: string;
+  authorId: string | null;
   authorName: string;
 };
 

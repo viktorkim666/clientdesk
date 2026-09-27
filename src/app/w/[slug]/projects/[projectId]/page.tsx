@@ -113,8 +113,16 @@ export default async function ProjectPage({
     update_id: string;
     body: string;
     created_at: string;
-    author_id: string;
+    author_id: string | null;
   };
+
+  // A null author id means the person who wrote this is gone (their
+  // account was deleted); the FKs on these columns are ON DELETE SET NULL
+  // for exactly that case, so the content stays and only the name changes.
+  const authorName = (authorId: string | null): string =>
+    authorId === null
+      ? "Former member"
+      : (nameByUserId.get(authorId) ?? "Unknown");
 
   const commentRows: CommentRow[] =
     updateIds.length > 0
@@ -138,13 +146,13 @@ export default async function ProjectPage({
     id: update.id,
     body: update.body,
     createdAt: update.created_at,
-    authorName: nameByUserId.get(update.author_id) ?? "Unknown",
+    authorName: authorName(update.author_id),
     comments: (commentsByUpdateId.get(update.id) ?? []).map((comment) => ({
       id: comment.id,
       body: comment.body,
       createdAt: comment.created_at,
       authorId: comment.author_id,
-      authorName: nameByUserId.get(comment.author_id) ?? "Unknown",
+      authorName: authorName(comment.author_id),
     })),
   }));
 
@@ -154,7 +162,7 @@ export default async function ProjectPage({
     sizeBytes: file.size_bytes,
     storagePath: file.storage_path,
     uploadedBy: file.uploaded_by,
-    uploaderName: nameByUserId.get(file.uploaded_by) ?? "Unknown",
+    uploaderName: authorName(file.uploaded_by),
   }));
 
   return (
