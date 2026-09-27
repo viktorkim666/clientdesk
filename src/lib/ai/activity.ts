@@ -19,9 +19,21 @@ type MemberRow = {
   profiles: { full_name: string | null } | null;
 };
 
-type UpdateRow = { body: string; created_at: string; author_id: string };
-type CommentRow = { body: string; created_at: string; author_id: string };
-type FileRow = { name: string; created_at: string; uploaded_by: string };
+type UpdateRow = {
+  body: string;
+  created_at: string;
+  author_id: string | null;
+};
+type CommentRow = {
+  body: string;
+  created_at: string;
+  author_id: string | null;
+};
+type FileRow = {
+  name: string;
+  created_at: string;
+  uploaded_by: string | null;
+};
 
 /**
  * The Supabase calls `loadProjectActivity` makes, and nothing else, as a
@@ -216,22 +228,30 @@ export async function loadProjectActivity(
     ]),
   );
 
+  // A null author id means the person who wrote this is gone (their
+  // account was deleted); the FKs on these columns are ON DELETE SET NULL
+  // for exactly that case, so the content stays and only the name changes.
+  const authorName = (authorId: string | null): string =>
+    authorId === null
+      ? "Former member"
+      : (nameByUserId.get(authorId) ?? "Unknown");
+
   const items: ActivityItem[] = [
     ...(updates ?? []).map((update) => ({
       kind: "update" as const,
-      authorName: nameByUserId.get(update.author_id) ?? "Unknown",
+      authorName: authorName(update.author_id),
       createdAt: update.created_at,
       text: update.body,
     })),
     ...(comments ?? []).map((comment) => ({
       kind: "comment" as const,
-      authorName: nameByUserId.get(comment.author_id) ?? "Unknown",
+      authorName: authorName(comment.author_id),
       createdAt: comment.created_at,
       text: comment.body,
     })),
     ...(files ?? []).map((file) => ({
       kind: "file" as const,
-      authorName: nameByUserId.get(file.uploaded_by) ?? "Unknown",
+      authorName: authorName(file.uploaded_by),
       createdAt: file.created_at,
       text: file.name,
     })),

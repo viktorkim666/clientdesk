@@ -17,7 +17,7 @@ export type ProjectFileRow = {
   name: string;
   sizeBytes: number;
   storagePath: string;
-  uploadedBy: string;
+  uploadedBy: string | null;
   uploaderName: string;
 };
 

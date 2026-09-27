@@ -110,7 +110,7 @@ export type Database = {
           email: string;
           expires_at: string;
           id: string;
-          invited_by: string;
+          invited_by: string | null;
           role: Database["public"]["Enums"]["workspace_role"];
           token_hash: string;
           workspace_id: string;
@@ -122,7 +122,7 @@ export type Database = {
           email: string;
           expires_at: string;
           id?: string;
-          invited_by: string;
+          invited_by?: string | null;
           role: Database["public"]["Enums"]["workspace_role"];
           token_hash: string;
           workspace_id: string;
@@ -134,7 +134,7 @@ export type Database = {
           email?: string;
           expires_at?: string;
           id?: string;
-          invited_by?: string;
+          invited_by?: string | null;
           role?: Database["public"]["Enums"]["workspace_role"];
           token_hash?: string;
           workspace_id?: string;
@@ -186,7 +186,7 @@ export type Database = {
           project_id: string;
           size_bytes: number;
           storage_path: string;
-          uploaded_by: string;
+          uploaded_by: string | null;
           workspace_id: string;
         };
         Insert: {
@@ -197,7 +197,7 @@ export type Database = {
           project_id: string;
           size_bytes: number;
           storage_path: string;
-          uploaded_by: string;
+          uploaded_by?: string | null;
           workspace_id: string;
         };
         Update: {
@@ -208,7 +208,7 @@ export type Database = {
           project_id?: string;
           size_bytes?: number;
           storage_path?: string;
-          uploaded_by?: string;
+          uploaded_by?: string | null;
           workspace_id?: string;
         };
         Relationships: [
@@ -230,7 +230,7 @@ export type Database = {
       };
       project_updates: {
         Row: {
-          author_id: string;
+          author_id: string | null;
           body: string;
           created_at: string;
           id: string;
@@ -238,7 +238,7 @@ export type Database = {
           workspace_id: string;
         };
         Insert: {
-          author_id: string;
+          author_id?: string | null;
           body: string;
           created_at?: string;
           id?: string;
@@ -246,7 +246,7 @@ export type Database = {
           workspace_id: string;
         };
         Update: {
-          author_id?: string;
+          author_id?: string | null;
           body?: string;
           created_at?: string;
           id?: string;
@@ -314,7 +314,7 @@ export type Database = {
       };
       update_comments: {
         Row: {
-          author_id: string;
+          author_id: string | null;
           body: string;
           created_at: string;
           id: string;
@@ -323,7 +323,7 @@ export type Database = {
           workspace_id: string;
         };
         Insert: {
-          author_id: string;
+          author_id?: string | null;
           body: string;
           created_at?: string;
           id?: string;
@@ -332,7 +332,7 @@ export type Database = {
           workspace_id: string;
         };
         Update: {
-          author_id?: string;
+          author_id?: string | null;
           body?: string;
           created_at?: string;
           id?: string;
@@ -454,21 +454,21 @@ export type Database = {
       workspaces: {
         Row: {
           created_at: string;
-          created_by: string;
+          created_by: string | null;
           id: string;
           name: string;
           slug: string;
         };
         Insert: {
           created_at?: string;
-          created_by: string;
+          created_by?: string | null;
           id?: string;
           name: string;
           slug: string;
         };
         Update: {
           created_at?: string;
-          created_by?: string;
+          created_by?: string | null;
           id?: string;
           name?: string;
           slug?: string;
@@ -501,7 +501,7 @@ export type Database = {
         Args: { p_name: string };
         Returns: {
           created_at: string;
-          created_by: string;
+          created_by: string | null;
           id: string;
           name: string;
           slug: string;
