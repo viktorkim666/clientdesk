@@ -51,8 +51,9 @@ export default async function ProjectPage({
 
   // Only staff see the draft button, so the billing lookup below runs only
   // for them - a client's page load doesn't pay for a query it can't use.
-  // It doesn't depend on workspace_members (queried right after) or vice
-  // versa, so the two run concurrently instead of one after another.
+  // None of these queries depend on each other's results - billing and
+  // members need only workspace.id, updates and files need only
+  // project.id - so all four run concurrently instead of one after another.
   const billingQuery = isStaff
     ? supabase
         .from("workspace_billing")
@@ -70,10 +71,26 @@ export default async function ProjectPage({
     .select("user_id, profiles(full_name)")
     .eq("workspace_id", workspace.id);
 
-  const [billingResult, { data: members }] = await Promise.all([
-    billingQuery,
-    membersQuery,
-  ]);
+  const updatesQuery = supabase
+    .from("project_updates")
+    .select("id, body, created_at, author_id")
+    .eq("project_id", project.id)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  const filesQuery = supabase
+    .from("project_files")
+    .select("id, name, size_bytes, storage_path, uploaded_by")
+    .eq("project_id", project.id)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  const [
+    billingResult,
+    { data: members },
+    { data: updateRows },
+    { data: fileRows },
+  ] = await Promise.all([billingQuery, membersQuery, updatesQuery, filesQuery]);
 
   let plan: ReturnType<typeof planFromStatus> = "free";
   let aiConfigured = false;
@@ -88,13 +105,6 @@ export default async function ProjectPage({
       member.profiles?.full_name ?? "Unknown",
     ]),
   );
-
-  const { data: updateRows } = await supabase
-    .from("project_updates")
-    .select("id, body, created_at, author_id")
-    .eq("project_id", project.id)
-    .order("created_at", { ascending: false })
-    .limit(50);
 
   const updateIds = (updateRows ?? []).map((update) => update.id);
 
@@ -137,13 +147,6 @@ export default async function ProjectPage({
       authorName: nameByUserId.get(comment.author_id) ?? "Unknown",
     })),
   }));
-
-  const { data: fileRows } = await supabase
-    .from("project_files")
-    .select("id, name, size_bytes, storage_path, uploaded_by")
-    .eq("project_id", project.id)
-    .order("created_at", { ascending: false })
-    .limit(100);
 
   const files: ProjectFileRow[] = (fileRows ?? []).map((file) => ({
     id: file.id,
