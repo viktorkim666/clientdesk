@@ -762,18 +762,26 @@ describe("getDownloadUrl", () => {
 
   it("scopes the file lookup to the given project id, as defense in depth alongside RLS", async () => {
     const eqMock = vi.fn(() => builder);
-    const builder = {
+    const inner = chainResult({
+      data: { storage_path: "some/path.pdf" },
+      error: null,
+    });
+    const builder: ReturnType<typeof chainResult> = {
       select: () => builder,
       eq: eqMock,
-      maybeSingle: () =>
-        Promise.resolve({
-          data: { storage_path: "some/path.pdf" },
-          error: null,
-        }),
+      in: inner.in,
+      order: inner.order,
+      limit: inner.limit,
+      insert: inner.insert,
+      update: inner.update,
+      delete: inner.delete,
+      maybeSingle: inner.maybeSingle,
+      single: inner.single,
+      then: inner.then,
     };
     createClientMock.mockReturnValue(
       buildClient({
-        from: () => builder as unknown as ReturnType<typeof chainResult>,
+        from: () => builder,
       }),
     );
 
