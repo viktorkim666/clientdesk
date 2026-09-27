@@ -63,4 +63,28 @@ describe("buildDraftPrompt", () => {
 
     expect(prompt.system).not.toMatch(/^#/m);
   });
+
+  it("forbids inventing status, dates, or commitments beyond the activity", () => {
+    const prompt = buildDraftPrompt(buildActivity());
+    const system = prompt.system.toLowerCase();
+
+    // Asserting the actual phrases, rather than single words like "date" or
+    // "status", avoids false positives - "date" alone would also match
+    // "mandate", proving nothing about this specific rule.
+    expect(system).toContain("do not invent");
+    expect(system).toContain("no dates or timelines");
+    expect(system).toContain("no commitments, promises or next steps");
+  });
+
+  it("tells the model to keep thin activity short instead of padding it", () => {
+    const prompt = buildDraftPrompt(buildActivity());
+
+    expect(prompt.system.toLowerCase()).toContain("short");
+  });
+
+  it("tells the model not to make promises on the agency's behalf", () => {
+    const prompt = buildDraftPrompt(buildActivity());
+
+    expect(prompt.system.toLowerCase()).toContain("promise");
+  });
 });
