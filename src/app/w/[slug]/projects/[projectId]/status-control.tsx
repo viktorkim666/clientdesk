@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { applyOptimisticAction } from "@/lib/optimistic-action";
 import {
   projectStatusSchema,
   type ProjectStatus,
@@ -58,26 +59,15 @@ export function StatusControl({
     // Optimistic: the trigger shows the new status right away and only
     // falls back to `previousStatus` if the server rejects the change.
     setStatus(parsed.data);
-    startTransition(async () => {
-      try {
-        const result = await changeStatus(
-          workspaceId,
-          workspaceSlug,
-          projectId,
-          parsed.data,
-        );
-        if (!result.ok) {
-          setStatus(previousStatus);
-          setError(result.error);
-        }
-      } catch {
-        // The Server Action call itself failed (e.g. a network error), so
-        // there is no `ActionResult` to read; the fallback resyncs the
-        // trigger the same way an `{ ok: false }` result does.
-        setStatus(previousStatus);
-        setError("Could not change the project's status");
-      }
-    });
+    startTransition(() =>
+      applyOptimisticAction({
+        action: () =>
+          changeStatus(workspaceId, workspaceSlug, projectId, parsed.data),
+        revert: () => setStatus(previousStatus),
+        onError: setError,
+        fallbackMessage: "Could not change the project's status",
+      }),
+    );
   }
 
   return (
