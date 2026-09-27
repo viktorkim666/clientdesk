@@ -93,8 +93,19 @@ export function InviteMemberDialog({
               </SelectTrigger>
               <SelectContent>
                 {availableRoles.map((candidate) => (
-                  <SelectItem key={candidate} value={candidate}>
-                    {candidate}
+                  <SelectItem
+                    key={candidate}
+                    value={candidate}
+                    // Inviting as "client" needs a client to attach the
+                    // invitee to; with none in the workspace yet, the
+                    // client picker below would render with no options at
+                    // all, so the option is disabled here instead of
+                    // letting the user reach that dead end.
+                    disabled={candidate === "client" && clients.length === 0}
+                  >
+                    {candidate === "client" && clients.length === 0
+                      ? "client (add a client first)"
+                      : candidate}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -109,7 +120,21 @@ export function InviteMemberDialog({
                 onValueChange={(value) => setClientId(value ?? "")}
               >
                 <SelectTrigger id="clientId">
-                  <SelectValue placeholder="Choose a client" />
+                  {/* `Select.Value` displays the raw value (here, a client
+                      UUID) unless told how to format it, so without this the
+                      trigger showed the id instead of the client's name. */}
+                  <SelectValue placeholder="Choose a client">
+                    {/* Base UI ignores `placeholder` once `children` is a
+                        function (it calls the function instead), so the
+                        fallback has to spell out the placeholder text
+                        itself; `value` is nullable per the library's
+                        contract, and is `null` before a client is
+                        chosen. */}
+                    {(value: string | null) =>
+                      clients.find((client) => client.id === value)?.name ??
+                      "Choose a client"
+                    }
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {clients.map((client) => (
