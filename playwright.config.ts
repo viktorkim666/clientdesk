@@ -2,6 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./e2e",
+  // Clears the seeded AI-draft workspace's rate-limit rows before the suite
+  // runs, so reruns can't exhaust its 50-per-24h cap. See the file itself.
+  globalSetup: "./e2e/support/global-setup.ts",
   // Serial: every spec signs up its own users against one shared local
   // Supabase + dev server, so parallel workers racing the same dev server
   // compilation caused flaky timeouts unrelated to the app itself.
