@@ -325,6 +325,47 @@ export type Database = {
           },
         ];
       };
+      workspace_billing: {
+        Row: {
+          cancel_at: string | null;
+          current_period_end: string | null;
+          price_id: string | null;
+          stripe_customer_id: string;
+          stripe_subscription_id: string | null;
+          subscription_status: string | null;
+          updated_at: string;
+          workspace_id: string;
+        };
+        Insert: {
+          cancel_at?: string | null;
+          current_period_end?: string | null;
+          price_id?: string | null;
+          stripe_customer_id: string;
+          stripe_subscription_id?: string | null;
+          subscription_status?: string | null;
+          updated_at?: string;
+          workspace_id: string;
+        };
+        Update: {
+          cancel_at?: string | null;
+          current_period_end?: string | null;
+          price_id?: string | null;
+          stripe_customer_id?: string;
+          stripe_subscription_id?: string | null;
+          subscription_status?: string | null;
+          updated_at?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "workspace_billing_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: true;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       workspace_members: {
         Row: {
           client_id: string | null;
