@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { canChangeRole, canRemoveMember } from "@/lib/permissions";
+import { applyOptimisticAction } from "@/lib/optimistic-action";
 import {
   workspaceRoleSchema,
   type WorkspaceRole,
@@ -72,47 +73,31 @@ export function MemberRow({
     setError(null);
     const previousRole = role;
     setRole(parsed.data);
-    startTransition(async () => {
-      try {
-        const result = await changeMemberRole(
-          workspaceId,
-          workspaceSlug,
-          member.userId,
-          parsed.data,
-        );
-        if (!result.ok) {
-          setRole(previousRole);
-          setError({ source: "role", message: result.error });
-        }
-      } catch {
-        // The Server Action call itself failed (e.g. a network error), so
-        // there is no `ActionResult` to read; the fallback resyncs the
-        // trigger the same way an `{ ok: false }` result does.
-        setRole(previousRole);
-        setError({
-          source: "role",
-          message: "Could not change this member's role",
-        });
-      }
-    });
+    startTransition(() =>
+      applyOptimisticAction({
+        action: () =>
+          changeMemberRole(
+            workspaceId,
+            workspaceSlug,
+            member.userId,
+            parsed.data,
+          ),
+        revert: () => setRole(previousRole),
+        onError: (message) => setError({ source: "role", message }),
+        fallbackMessage: "Could not change this member's role",
+      }),
+    );
   }
 
   function handleRemove() {
     setError(null);
-    startTransition(async () => {
-      try {
-        const result = await removeMember(
-          workspaceId,
-          workspaceSlug,
-          member.userId,
-        );
-        if (!result.ok) {
-          setError({ source: "remove", message: result.error });
-        }
-      } catch {
-        setError({ source: "remove", message: "Could not remove this member" });
-      }
-    });
+    startTransition(() =>
+      applyOptimisticAction({
+        action: () => removeMember(workspaceId, workspaceSlug, member.userId),
+        onError: (message) => setError({ source: "remove", message }),
+        fallbackMessage: "Could not remove this member",
+      }),
+    );
   }
 
   const roleError = error?.source === "role" ? error.message : null;
