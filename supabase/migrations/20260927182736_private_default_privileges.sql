@@ -1,0 +1,38 @@
+-- Closes the gap 20260927170311_revoke_anon_rpc_execute.sql left open: a
+-- brand-new SECURITY DEFINER function created in `private` after that
+-- migration still gets Postgres's built-in "every function is
+-- EXECUTE-able by PUBLIC" default, so anon and authenticated could call it
+-- until someone remembers to revoke that by hand, the same way that
+-- migration had to for every function that already existed.
+--
+-- The schema-scoped form one would reach for first,
+--   ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA private
+--     REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
+-- does not work. Verified by hand against this database: `\ddp private.*`
+-- shows zero rows both before and after running it. Schema private never
+-- had a default-privilege entry of its own to begin with (nothing had
+-- granted PUBLIC there by name), so the schema-scoped REVOKE has nothing
+-- to remove and leaves no bookkeeping row behind -- it is a no-op from a
+-- pristine schema. Postgres's hardcoded PUBLIC-EXECUTE default lives
+-- outside pg_default_acl entirely, so a function created in `private`
+-- right after running the schema-scoped REVOKE was still callable by
+-- anon.
+--
+-- Only the schema-unscoped form below -- no IN SCHEMA -- actually replaces
+-- that hardcoded default for role postgres. Confirmed the same way: after
+-- running it, a function created in `private` came out with no PUBLIC
+-- entry in its ACL at all, and one created in `public` merged this global
+-- entry with the existing schema-specific one (which already grants
+-- authenticated and service_role by name) instead of losing it -- Postgres
+-- layers a schema-specific default-privilege entry on top of the global
+-- one rather than letting the global one replace it. So this also closes
+-- the same latent gap for any function `public` gains after this
+-- migration, which the by-name `revoke ... from anon` in the earlier
+-- migration only closed for the functions that already existed at the
+-- time.
+--
+-- private.* helpers that RLS policies already call keep their EXECUTE
+-- grant to authenticated -- those are per-function GRANTs made in the
+-- earlier migration, not default privileges, so this does not touch them.
+alter default privileges for role postgres
+  revoke execute on functions from public;
