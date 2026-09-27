@@ -53,13 +53,18 @@ SELECT throws_ok(
   'a non-member cannot call the recipients RPC'
 );
 
--- Attack: an anonymous caller is rejected outright.
+-- Attack: an anonymous caller is rejected outright. anon has no EXECUTE on
+-- this function (see the revoke_anon_rpc_execute migration), so the
+-- privilege check refuses the call before the function's own
+-- `auth.uid() is null` guard ever runs; the caller gets Postgres's
+-- SQLSTATE 42501, not the function's own 'authentication required'.
 SET LOCAL ROLE anon;
 RESET request.jwt.claims;
 SELECT throws_ok(
   $$ select public.project_update_recipients('d0000000-0000-0000-0000-00000000000a') $$,
-  'authentication required',
-  'the recipients RPC is rejected for an anonymous caller'
+  '42501',
+  NULL,
+  'the recipients RPC is refused for an anonymous caller at the privilege check (no EXECUTE grant)'
 );
 
 SELECT * FROM finish();

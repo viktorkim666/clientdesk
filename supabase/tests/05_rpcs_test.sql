@@ -24,13 +24,18 @@ SELECT is(
   'create_workspace makes the caller the owner of the new workspace'
 );
 
--- create_workspace() refuses to run without a signed-in user.
+-- create_workspace() refuses to run without a signed-in user. anon has no
+-- EXECUTE on this function (see the revoke_anon_rpc_execute migration), so
+-- the privilege check refuses the call before the function's own
+-- `auth.uid() is null` guard ever runs; the caller gets Postgres's
+-- SQLSTATE 42501, not the function's own 'authentication required'.
 SET LOCAL ROLE anon;
 RESET request.jwt.claims;
 SELECT throws_ok(
   $$ select public.create_workspace('Anonymous Agency') $$,
-  'authentication required',
-  'create_workspace is rejected for an anonymous caller'
+  '42501',
+  NULL,
+  'create_workspace is refused for an anonymous caller at the privilege check (no EXECUTE grant)'
 );
 
 -- accept_invitation(): the happy path, then every attack case.
