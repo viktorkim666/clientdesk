@@ -87,4 +87,34 @@ describe("buildDraftPrompt", () => {
 
     expect(prompt.system.toLowerCase()).toContain("promise");
   });
+
+  it("includes a worked example clearly marked as an example with made-up facts", () => {
+    const prompt = buildDraftPrompt(buildActivity());
+    const system = prompt.system.toLowerCase();
+
+    expect(system).toContain("example");
+    // The marker has to say the facts aren't real, or the model may treat
+    // the sample activity as something to reuse.
+    expect(system).toMatch(/made up|not real|made-up/);
+  });
+
+  it("never uses a spaced hyphen as a dash", () => {
+    const prompt = buildDraftPrompt(buildActivity());
+
+    expect(prompt.system).not.toContain(" - ");
+  });
+
+  it("keeps the example draft itself free of invented promises or status claims", () => {
+    const prompt = buildDraftPrompt(buildActivity());
+    const idealDraftMatch = prompt.system.match(/ideal draft:([\s\S]*)$/i);
+
+    expect(idealDraftMatch).not.toBeNull();
+    const exampleDraft = (idealDraftMatch as RegExpMatchArray)[1]
+      .trim()
+      .toLowerCase();
+
+    for (const forbidden of ["keep you", "on track", "will ", "next week"]) {
+      expect(exampleDraft).not.toContain(forbidden);
+    }
+  });
 });
