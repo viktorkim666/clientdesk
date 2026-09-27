@@ -12,5 +12,6 @@ describe("getEmailSender", () => {
 
     expect(sender).not.toBe(consoleEmailSender);
     expect(sender.sendInvitationEmail).toBeTypeOf("function");
+    expect(sender.sendProjectUpdateEmail).toBeTypeOf("function");
   });
 });
