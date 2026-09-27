@@ -10,6 +10,7 @@ describe("parseServerEnv", () => {
       STRIPE_WEBHOOK_SECRET: undefined,
       STRIPE_PRO_PRICE_ID: undefined,
       SUPABASE_SECRET_KEY: undefined,
+      ANTHROPIC_API_KEY: undefined,
     });
   });
 
@@ -19,6 +20,7 @@ describe("parseServerEnv", () => {
       STRIPE_WEBHOOK_SECRET: "whsec_123",
       STRIPE_PRO_PRICE_ID: "price_123",
       SUPABASE_SECRET_KEY: "sb_secret_123",
+      ANTHROPIC_API_KEY: "sk-ant-test_123",
     };
 
     const env = parseServerEnv(raw);

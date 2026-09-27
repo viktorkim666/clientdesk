@@ -10,6 +10,10 @@ const serverEnvSchema = z.object({
   STRIPE_WEBHOOK_SECRET: optionalString(),
   STRIPE_PRO_PRICE_ID: optionalString(),
   SUPABASE_SECRET_KEY: optionalString(),
+  // Optional for the same reason: without it, the AI draft generator falls
+  // back to a fake one outside production (see the plan's "Configuration"
+  // decision).
+  ANTHROPIC_API_KEY: optionalString(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -36,4 +40,5 @@ export const serverEnv = parseServerEnv({
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
   STRIPE_PRO_PRICE_ID: process.env.STRIPE_PRO_PRICE_ID,
   SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
+  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
 });
