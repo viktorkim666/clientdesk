@@ -3,6 +3,10 @@
 -- directly through JWT claims instead of looking them up.
 --
 -- Password for every seeded user is "password123" (local/test only).
+--
+-- This file is for local development and CI only - it plants known
+-- passwords and fixed UUIDs on purpose, which is exactly what a real
+-- project must never have. Never run it against a hosted Supabase project.
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
@@ -93,3 +97,45 @@ insert into public.project_files (id, workspace_id, project_id, uploaded_by, sto
   ('90000000-0000-0000-0000-00000000000a', 'a0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-00000000000a', '00000001-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001/d0000000-0000-0000-0000-00000000000a/90000000-0000-0000-0000-00000000000a/kickoff-notes.pdf', 'kickoff-notes.pdf', 204800, 'application/pdf'),
   ('90000000-0000-0000-0000-00000000000b', 'a0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-00000000000b', '00000001-0000-0000-0000-000000000001', 'a0000000-0000-0000-0000-000000000001/d0000000-0000-0000-0000-00000000000b/90000000-0000-0000-0000-00000000000b/brand-refresh-brief.pdf', 'brand-refresh-brief.pdf', 512000, 'application/pdf'),
   ('90000000-0000-0000-0000-00000000000c', 'a0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-00000000000a', '0000000a-0000-0000-0000-00000000000a', 'a0000000-0000-0000-0000-000000000001/d0000000-0000-0000-0000-00000000000a/90000000-0000-0000-0000-00000000000c/site-copy-feedback.docx', 'site-copy-feedback.docx', 40960, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+-- A second, separate workspace, already on the Pro plan, for
+-- e2e/ai-draft.spec.ts. It needs a real Pro workspace to exercise the
+-- "Draft update" button, but e2e has no Stripe keys and no service-role
+-- key to fake a subscription at runtime (see that spec for the full
+-- reasoning), so this row is written here instead, directly by the
+-- migration/seed role that bypasses RLS - the same way 13_plan_limits_test
+-- and 14_ai_draft_requests_test flip a workspace to Pro for their own
+-- fixtures. Fixed UUIDs, own namespace (prefix 2), so this never touches
+-- the workspace `a0000000-...-000000000001` that 13_plan_limits_test and
+-- 14_ai_draft_requests_test assert starts Free. The spec creates its own
+-- clients, projects and staff/client users under this workspace per run
+-- (fresh UUIDs each time, via the UI), so only the owner and the Pro
+-- billing row need to be fixed here.
+insert into auth.users (
+  instance_id, id, aud, role, email, encrypted_password,
+  email_confirmed_at, last_sign_in_at,
+  raw_app_meta_data, raw_user_meta_data,
+  created_at, updated_at,
+  confirmation_token, email_change, email_change_token_new, recovery_token
+) values (
+  '00000000-0000-0000-0000-000000000000',
+  '00000002-0000-0000-0000-000000000021',
+  'authenticated', 'authenticated', 'ai-draft-owner@clientdesk.test',
+  extensions.crypt('password123', extensions.gen_salt('bf')),
+  now(), now(),
+  '{"provider":"email","providers":["email"]}', '{"full_name":"Priya Pro Owner"}',
+  now(), now(), '', '', '', ''
+);
+
+insert into public.workspaces (id, name, slug, created_by) values (
+  '20000000-0000-0000-0000-000000000001',
+  'AI Draft Pro Agency',
+  'ai-draft-pro-agency',
+  '00000002-0000-0000-0000-000000000021'
+);
+
+insert into public.workspace_members (workspace_id, user_id, role, client_id) values
+  ('20000000-0000-0000-0000-000000000001', '00000002-0000-0000-0000-000000000021', 'owner', null);
+
+insert into public.workspace_billing (workspace_id, stripe_customer_id, subscription_status) values
+  ('20000000-0000-0000-0000-000000000001', 'cus_seed_ai_draft_pro_agency', 'active');
