@@ -63,4 +63,43 @@ describe("createResendEmailSender", () => {
       }),
     ).rejects.toThrow(/bad request/);
   });
+
+  it("HTML-escapes project update fields and keeps the body's line breaks", async () => {
+    const sender = createResendEmailSender("re_test_key");
+
+    await sender.sendProjectUpdateEmail({
+      to: "client@example.com",
+      workspaceName: `Acme & "Sons"`,
+      projectName: `<script>alert(1)</script>`,
+      body: "Line one\nLine two",
+      projectUrl: `https://example.com/w/acme"><script>alert(2)</script>`,
+    });
+
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    const html = sendMock.mock.calls[0][0].html;
+
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("&lt;script&gt;");
+    expect(html).toContain("Acme &amp; &quot;Sons&quot;");
+    expect(html).toContain("Line one<br />Line two");
+    expect(html).toMatch(/href="https:\/\/example\.com\/w\/acme&quot;[^"]*"/);
+  });
+
+  it("throws when Resend returns an error for a project update email", async () => {
+    sendMock.mockResolvedValueOnce({
+      data: null,
+      error: { message: "bad request" },
+    });
+    const sender = createResendEmailSender("re_test_key");
+
+    await expect(
+      sender.sendProjectUpdateEmail({
+        to: "client@example.com",
+        workspaceName: "Acme Agency",
+        projectName: "Website Redesign",
+        body: "Kickoff notes.",
+        projectUrl: "https://example.com/w/acme-agency/projects/project-1",
+      }),
+    ).rejects.toThrow(/bad request/);
+  });
 });

@@ -42,4 +42,30 @@ describe("createConsoleEmailSender", () => {
     expect(second.to).toBe("client-b@clientdesk.test");
     expect(second.inviteUrl).toBe("http://localhost:3000/invite/token-2");
   });
+
+  it("appends a JSON line with the project update for the recipient", async () => {
+    const sender = createConsoleEmailSender(outputFile);
+
+    await sender.sendProjectUpdateEmail({
+      to: "client-a@clientdesk.test",
+      workspaceName: "Acme Agency",
+      projectName: "Website Redesign",
+      body: "Kickoff call notes.",
+      projectUrl: "http://localhost:3000/w/acme-agency/projects/project-1",
+    });
+
+    const lines = (await readFile(outputFile, "utf8")).trim().split("\n");
+    expect(lines).toHaveLength(1);
+
+    const record = JSON.parse(lines[0]) as {
+      to: string;
+      projectUrl: string;
+      body: string;
+    };
+    expect(record.to).toBe("client-a@clientdesk.test");
+    expect(record.projectUrl).toBe(
+      "http://localhost:3000/w/acme-agency/projects/project-1",
+    );
+    expect(record.body).toBe("Kickoff call notes.");
+  });
 });
