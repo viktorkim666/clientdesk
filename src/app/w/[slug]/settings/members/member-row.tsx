@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import {
@@ -11,7 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { canChangeRole, canRemoveMember } from "@/lib/permissions";
-import type { WorkspaceRole } from "@/lib/validation/invitation";
+import {
+  workspaceRoleSchema,
+  type WorkspaceRole,
+} from "@/lib/validation/invitation";
 import { changeMemberRole, removeMember } from "./actions";
 
 export type MemberRowData = {
@@ -20,6 +23,8 @@ export type MemberRowData = {
   fullName: string;
   clientName: string | null;
 };
+
+type RowError = { source: "role" | "remove"; message: string } | null;
 
 export function MemberRow({
   workspaceId,
@@ -35,41 +40,118 @@ export function MemberRow({
   isLastOwner: boolean;
 }) {
   const [pending, startTransition] = useTransition();
+  // Controlled, not `defaultValue`: on a failed change the trigger is
+  // resynced to `member.role` below, matching the pattern in
+  // `status-control.tsx` (an uncontrolled `Select` can't be corrected once
+  // the server rejects the change the user picked).
+  const [role, setRole] = useState(member.role);
+  // `member.role` is only the value from the render that mounted this row;
+  // after a revalidation (e.g. another owner changed this member's role)
+  // the parent re-renders with a new prop, but `useState`'s initial value is
+  // never re-read. Comparing against the last prop we've seen and adjusting
+  // state during render is the supported way to resync to it. While our own
+  // change is in flight (`pending`), the server can't yet reflect it, so an
+  // unrelated prop update during that window is left alone rather than
+  // clobbering the optimistic value.
+  const [syncedRole, setSyncedRole] = useState(member.role);
+  if (!pending && member.role !== syncedRole) {
+    setSyncedRole(member.role);
+    setRole(member.role);
+  }
+  const [error, setError] = useState<RowError>(null);
   const showRoleSelect =
     canChangeRole(actingRole) && member.role !== "client" && !isLastOwner;
   const showRemove = canRemoveMember(actingRole) && !isLastOwner;
+  const roleErrorId = `member-role-error-${member.userId}`;
+  const removeErrorId = `member-remove-error-${member.userId}`;
+
+  function handleRoleChange(value: string | null) {
+    if (!value) return;
+    const parsed = workspaceRoleSchema.safeParse(value);
+    if (!parsed.success) return; // The select only ever offers valid roles.
+    setError(null);
+    const previousRole = role;
+    setRole(parsed.data);
+    startTransition(async () => {
+      try {
+        const result = await changeMemberRole(
+          workspaceId,
+          workspaceSlug,
+          member.userId,
+          parsed.data,
+        );
+        if (!result.ok) {
+          setRole(previousRole);
+          setError({ source: "role", message: result.error });
+        }
+      } catch {
+        // The Server Action call itself failed (e.g. a network error), so
+        // there is no `ActionResult` to read; the fallback resyncs the
+        // trigger the same way an `{ ok: false }` result does.
+        setRole(previousRole);
+        setError({
+          source: "role",
+          message: "Could not change this member's role",
+        });
+      }
+    });
+  }
+
+  function handleRemove() {
+    setError(null);
+    startTransition(async () => {
+      try {
+        const result = await removeMember(
+          workspaceId,
+          workspaceSlug,
+          member.userId,
+        );
+        if (!result.ok) {
+          setError({ source: "remove", message: result.error });
+        }
+      } catch {
+        setError({ source: "remove", message: "Could not remove this member" });
+      }
+    });
+  }
+
+  const roleError = error?.source === "role" ? error.message : null;
+  const removeError = error?.source === "remove" ? error.message : null;
 
   return (
     <TableRow>
       <TableCell>{member.fullName}</TableCell>
       <TableCell>
         {showRoleSelect ? (
-          <Select
-            defaultValue={member.role}
-            disabled={pending}
-            onValueChange={(value) => {
-              if (!value) return;
-              startTransition(() => {
-                void changeMemberRole(
-                  workspaceId,
-                  workspaceSlug,
-                  member.userId,
-                  value,
-                );
-              });
-            }}
-          >
-            <SelectTrigger
-              className="w-28"
-              aria-label={`Role for ${member.fullName}`}
+          <div className="flex flex-col gap-1">
+            <Select
+              value={role}
+              disabled={pending}
+              onValueChange={handleRoleChange}
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="owner">owner</SelectItem>
-              <SelectItem value="member">member</SelectItem>
-            </SelectContent>
-          </Select>
+              <SelectTrigger
+                className="w-28"
+                aria-label={`Role for ${member.fullName}`}
+                aria-invalid={roleError !== null}
+                aria-describedby={roleError !== null ? roleErrorId : undefined}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="owner">owner</SelectItem>
+                <SelectItem value="member">member</SelectItem>
+              </SelectContent>
+            </Select>
+            {roleError ? (
+              <p
+                id={roleErrorId}
+                role="alert"
+                className="text-xs text-destructive"
+              >
+                {roleError}
+              </p>
+            ) : null}
+          </div>
         ) : (
           member.role
         )}
@@ -77,19 +159,30 @@ export function MemberRow({
       <TableCell>{member.clientName ?? "—"}</TableCell>
       <TableCell className="text-right">
         {showRemove ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={pending}
-            onClick={() =>
-              startTransition(() => {
-                void removeMember(workspaceId, workspaceSlug, member.userId);
-              })
-            }
-          >
-            Remove
-          </Button>
+          <div className="flex flex-col items-end gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={pending}
+              onClick={handleRemove}
+              aria-invalid={removeError !== null}
+              aria-describedby={
+                removeError !== null ? removeErrorId : undefined
+              }
+            >
+              Remove
+            </Button>
+            {removeError ? (
+              <p
+                id={removeErrorId}
+                role="alert"
+                className="text-xs text-destructive"
+              >
+                {removeError}
+              </p>
+            ) : null}
+          </div>
         ) : null}
       </TableCell>
     </TableRow>
