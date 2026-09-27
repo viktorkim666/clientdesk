@@ -6,6 +6,11 @@ import { clientNameSchema } from "@/lib/validation/client";
 
 export type ClientActionResult = { ok: true } | { ok: false; error: string };
 
+// Matches the SQLSTATE `private.enforce_client_limit()` raises in
+// `supabase/migrations/*_billing.sql` — a stable code to branch on instead
+// of parsing the trigger's `plan_limit_clients` message text.
+const FREE_PLAN_LIMIT_ERROR_CODE = "CD001";
+
 export async function createClientCompany(
   workspaceId: string,
   workspaceSlug: string,
@@ -25,6 +30,12 @@ export async function createClientCompany(
     .insert({ workspace_id: workspaceId, name: parsed.data.name });
 
   if (error) {
+    if (error.code === FREE_PLAN_LIMIT_ERROR_CODE) {
+      return {
+        ok: false,
+        error: "The Free plan allows 2 clients. Upgrade to Pro to add more.",
+      };
+    }
     return { ok: false, error: "Could not create the client" };
   }
 

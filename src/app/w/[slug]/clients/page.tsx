@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -8,6 +9,7 @@ import {
 } from "@/components/ui/table";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace/current";
+import { FREE_CLIENT_LIMIT, planFromStatus } from "@/lib/billing/plan";
 import { NewClientDialog } from "./new-client-dialog";
 
 export default async function ClientsPage({
@@ -19,13 +21,23 @@ export default async function ClientsPage({
   const supabase = await createClient();
   const workspace = await getCurrentWorkspace(supabase, slug);
 
-  const { data: clients } = await supabase
-    .from("clients")
-    .select("id, name")
-    .eq("workspace_id", workspace.id)
-    .order("created_at", { ascending: true });
+  const [{ data: clients }, { data: billingRow }] = await Promise.all([
+    supabase
+      .from("clients")
+      .select("id, name")
+      .eq("workspace_id", workspace.id)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("workspace_billing")
+      .select("subscription_status")
+      .eq("workspace_id", workspace.id)
+      .maybeSingle(),
+  ]);
 
   const canManage = workspace.role === "owner" || workspace.role === "member";
+  const clientCount = clients?.length ?? 0;
+  const plan = planFromStatus(billingRow?.subscription_status ?? null);
+  const atFreeLimit = plan === "free" && clientCount >= FREE_CLIENT_LIMIT;
 
   return (
     <div className="space-y-4">
@@ -38,6 +50,23 @@ export default async function ClientsPage({
           />
         ) : null}
       </div>
+      {plan === "free" ? (
+        <p className="text-sm text-muted-foreground">
+          {clientCount} / {FREE_CLIENT_LIMIT} clients used.
+          {atFreeLimit && canManage ? (
+            <>
+              {" "}
+              <Link
+                href={`/w/${workspace.slug}/settings/billing`}
+                className="underline"
+              >
+                Upgrade to Pro
+              </Link>{" "}
+              to add more.
+            </>
+          ) : null}
+        </p>
+      ) : null}
       <Table>
         <TableHeader>
           <TableRow>

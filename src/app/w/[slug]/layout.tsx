@@ -39,6 +39,11 @@ export default async function WorkspaceLayout({
               <Link href={`/w/${workspace.slug}/clients`}>Clients</Link>
             ) : null}
             <Link href={`/w/${workspace.slug}/projects`}>Projects</Link>
+            {isStaff ? (
+              <Link href={`/w/${workspace.slug}/settings/billing`}>
+                Billing
+              </Link>
+            ) : null}
             {workspace.role === "owner" ? (
               <Link href={`/w/${workspace.slug}/settings/members`}>
                 Members
