@@ -3,6 +3,12 @@
 BEGIN;
 SELECT plan(12);
 
+-- The seeded workspace already has 2 clients, the Free limit. A billing row
+-- keeps it on Pro so the inserts below test RLS only, not the client limit
+-- (that trigger has its own tests in 13_plan_limits_test.sql).
+INSERT INTO public.workspace_billing (workspace_id, stripe_customer_id, subscription_status)
+  VALUES ('a0000000-0000-0000-0000-000000000001', 'cus_test_clients_rls', 'active');
+
 SELECT has_index(
   'public', 'clients', 'clients_workspace_id_idx',
   'clients has an index on workspace_id for "clients in this workspace" lookups'
