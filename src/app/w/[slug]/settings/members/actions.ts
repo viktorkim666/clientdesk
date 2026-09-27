@@ -90,13 +90,19 @@ export async function changeMemberRole(
   role: Database["public"]["Enums"]["workspace_role"],
 ): Promise<MemberActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase
+  // `.select()` makes Postgres return the updated rows, not just whether the
+  // request itself errored: without it, updating a row that no longer
+  // matches (e.g. another owner removed this member first) comes back as
+  // `{ error: null }` with zero rows actually changed, and the caller would
+  // wrongly treat that as success.
+  const { data, error } = await supabase
     .from("workspace_members")
     .update({ role, client_id: null })
     .eq("workspace_id", workspaceId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("user_id");
 
-  if (error) {
+  if (error || !data || data.length === 0) {
     return { ok: false, error: "Could not change this member's role" };
   }
 
@@ -110,13 +116,17 @@ export async function removeMember(
   userId: string,
 ): Promise<MemberActionResult> {
   const supabase = await createClient();
-  const { error } = await supabase
+  // Same reasoning as `changeMemberRole` above: without `.select()`, deleting
+  // a row someone else already removed comes back as `{ error: null }` with
+  // nothing actually deleted.
+  const { data, error } = await supabase
     .from("workspace_members")
     .delete()
     .eq("workspace_id", workspaceId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("user_id");
 
-  if (error) {
+  if (error || !data || data.length === 0) {
     return { ok: false, error: "Could not remove this member" };
   }
 
