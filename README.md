@@ -64,6 +64,34 @@ To end a test subscription immediately:
 stripe subscriptions cancel <sub_id> --confirm
 ```
 
+## AI update draft
+
+Staff on a Pro workspace can click "Draft update" on a project page. The server collects the project's activity from the last 7 days (updates, comments and file names), asks Claude for a short client update and streams the text into the update form. The staff member edits it and posts it like any other update. Free workspaces see an upgrade prompt instead.
+
+Drafts use `claude-haiku-4-5-20251001` with `max_tokens` 800. `claim_ai_draft` in Postgres allows 10 drafts per user per hour and 50 per workspace per 24 hours. The input is capped at 50 items or 12,000 characters, whichever comes first, to keep the cost of one request bounded.
+
+`ANTHROPIC_API_KEY` is optional. Locally and in CI, an empty key switches to a fake generator that streams a template draft. In production, an empty key disables the button with "AI drafting is not configured".
+
+### Setup
+
+To try drafting with the real Claude API:
+
+1. Create an API key in the Anthropic Console and add it to `.env.local`:
+
+```bash
+ANTHROPIC_API_KEY=sk-...
+```
+
+2. Restart the dev server.
+
+Keep `ANTHROPIC_API_KEY` empty when running e2e tests, so they use the fake generator.
+
+### Local testing
+
+The seed creates a Pro workspace for this feature: `ai-draft-pro-agency`, owner `ai-draft-owner@clientdesk.test`, password `password123`. Sign in, open a project with recent activity and click "Draft update" in the Updates card.
+
+Each local run of `e2e/ai-draft.spec.ts` counts against that workspace's limit of 50 drafts per 24 hours. If the spec fails locally with a rate-limit error, run `pnpm supabase db reset` to clear the `ai_draft_requests` rows.
+
 ## Tests
 
 ```bash

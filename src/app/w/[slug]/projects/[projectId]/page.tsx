@@ -10,6 +10,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace/current";
+import { getDraftGenerator } from "@/lib/ai";
+import { planFromStatus } from "@/lib/billing/plan";
 import { StatusControl } from "./status-control";
 import { UpdateForm } from "./update-form";
 import { UpdatesList, type UpdateWithComments } from "./updates-list";
@@ -47,14 +49,38 @@ export default async function ProjectPage({
 
   const isStaff = workspace.role === "owner" || workspace.role === "member";
 
+  // Only staff see the draft button, so the billing lookup below runs only
+  // for them - a client's page load doesn't pay for a query it can't use.
+  // It doesn't depend on workspace_members (queried right after) or vice
+  // versa, so the two run concurrently instead of one after another.
+  const billingQuery = isStaff
+    ? supabase
+        .from("workspace_billing")
+        .select("subscription_status")
+        .eq("workspace_id", workspace.id)
+        .maybeSingle()
+    : null;
+
   // None of project_updates, update_comments or project_files reference
   // public.profiles directly (their author/uploader columns point at
   // auth.users), so author names come from the same workspace_members ->
   // profiles join the members page uses, keyed by user id.
-  const { data: members } = await supabase
+  const membersQuery = supabase
     .from("workspace_members")
     .select("user_id, profiles(full_name)")
     .eq("workspace_id", workspace.id);
+
+  const [billingResult, { data: members }] = await Promise.all([
+    billingQuery,
+    membersQuery,
+  ]);
+
+  let plan: ReturnType<typeof planFromStatus> = "free";
+  let aiConfigured = false;
+  if (isStaff) {
+    plan = planFromStatus(billingResult?.data?.subscription_status ?? null);
+    aiConfigured = getDraftGenerator() !== null;
+  }
 
   const nameByUserId = new Map(
     (members ?? []).map((member) => [
@@ -174,6 +200,8 @@ export default async function ProjectPage({
               workspaceId={workspace.id}
               workspaceSlug={workspace.slug}
               projectId={project.id}
+              plan={plan}
+              aiConfigured={aiConfigured}
             />
           ) : null}
           <UpdatesList
