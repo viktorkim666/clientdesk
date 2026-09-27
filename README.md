@@ -84,7 +84,7 @@ ANTHROPIC_API_KEY=sk-...
 
 2. Restart the dev server.
 
-Keep `ANTHROPIC_API_KEY` empty when running e2e tests, so they use the fake generator.
+`pnpm test:e2e` always uses the fake generator: it starts its own dev server on port 3100 with `ANTHROPIC_API_KEY` and the Stripe keys forced empty, regardless of what's in `.env.local` or whether a dev server is already running on port 3000.
 
 ### Local testing
 
@@ -100,6 +100,6 @@ pnpm typecheck
 pnpm test              # unit tests (Vitest)
 pnpm supabase db reset # reapply migrations + seed
 pnpm supabase test db  # pgTAP tests (access control, RPCs)
-pnpm test:e2e          # Playwright, requires the app and Supabase running
+pnpm test:e2e          # Playwright, requires Supabase running; starts its own dev server on port 3100
 pnpm build
 ```

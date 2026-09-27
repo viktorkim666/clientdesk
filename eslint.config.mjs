@@ -25,6 +25,8 @@ const eslintConfig = defineConfig([
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",
+    // Build output of the e2e dev server (see playwright.config.ts):
+    ".next-e2e/**",
     "out/**",
     "build/**",
     "next-env.d.ts",
