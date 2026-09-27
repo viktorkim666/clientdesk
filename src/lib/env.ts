@@ -1,8 +1,9 @@
 import { z } from "zod";
 
 // `.env.local` lines like `RESEND_API_KEY=` load as "", not as a missing
-// key, so an optional variable must treat "" the same as absent.
-const optionalString = () =>
+// key, so an optional variable must treat "" the same as absent. Exported so
+// `env.server.ts` can build its own schema the same way.
+export const optionalString = () =>
   z.preprocess(
     (value) => (value === "" ? undefined : value),
     z.string().min(1).optional(),

@@ -22,6 +22,16 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(dirname, "./src"),
+      // `server-only`'s default export throws unconditionally so a Client
+      // Component build fails on import; Next's RSC bundler avoids that by
+      // resolving the package's own `react-server` export condition to its
+      // no-op `empty.js` instead. Vitest doesn't apply that condition, so
+      // point at the same no-op file directly — the package's own escape
+      // hatch, not a project-specific stub.
+      "server-only": path.resolve(
+        dirname,
+        "./node_modules/server-only/empty.js",
+      ),
     },
   },
 });
