@@ -34,6 +34,45 @@ export type Database = {
   };
   public: {
     Tables: {
+      ai_draft_requests: {
+        Row: {
+          created_at: string;
+          id: string;
+          project_id: string;
+          user_id: string;
+          workspace_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          project_id: string;
+          user_id: string;
+          workspace_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          project_id?: string;
+          user_id?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_draft_requests_project_id_workspace_id_fkey";
+            columns: ["project_id", "workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id", "workspace_id"];
+          },
+          {
+            foreignKeyName: "ai_draft_requests_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       clients: {
         Row: {
           created_at: string;
@@ -457,6 +496,7 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      claim_ai_draft: { Args: { p_project_id: string }; Returns: string };
       create_workspace: {
         Args: { p_name: string };
         Returns: {
