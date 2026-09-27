@@ -41,4 +41,20 @@ export function parseEnv(raw: unknown): Env {
   return result.data;
 }
 
-export const env = parseEnv(process.env);
+// Next.js only inlines `process.env.NEXT_PUBLIC_*` into client bundles when
+// the property is accessed by name in the source text; passing the whole
+// `process.env` object through (as this used to) left those values
+// undefined in the browser, because no client bundle referenced any of
+// these keys directly. `file-uploader.tsx` is the first client component to
+// import `env` (through `lib/supabase/client`), which is what surfaced it.
+export const env = parseEnv({
+  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID:
+    process.env.SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID,
+  SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET:
+    process.env.SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET,
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
+});
