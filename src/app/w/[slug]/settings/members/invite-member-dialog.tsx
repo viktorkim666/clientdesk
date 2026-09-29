@@ -19,6 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { roleLabel } from "@/lib/format";
 import { canInviteRole } from "@/lib/permissions";
 import type { WorkspaceRole } from "@/lib/validation/invitation";
 import { inviteMember, type MemberActionResult } from "./actions";
@@ -89,7 +90,9 @@ export function InviteMemberDialog({
               }}
             >
               <SelectTrigger id="role">
-                <SelectValue />
+                <SelectValue>
+                  {(value: WorkspaceRole) => roleLabel(value)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {availableRoles.map((candidate) => (
@@ -104,8 +107,8 @@ export function InviteMemberDialog({
                     disabled={candidate === "client" && clients.length === 0}
                   >
                     {candidate === "client" && clients.length === 0
-                      ? "client (add a client first)"
-                      : candidate}
+                      ? `${roleLabel(candidate)} (add a client first)`
+                      : roleLabel(candidate)}
                   </SelectItem>
                 ))}
               </SelectContent>

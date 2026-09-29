@@ -1,4 +1,9 @@
 import Link from "next/link";
+import { TriangleAlert, Users } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
+import { TableCard } from "@/components/table-card";
+import { Progress } from "@/components/ui/progress";
 import {
   Table,
   TableBody,
@@ -7,6 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { UserAvatar } from "@/components/user-avatar";
+import { formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace/current";
 import { FREE_CLIENT_LIMIT, planFromStatus } from "@/lib/billing/plan";
@@ -21,10 +28,10 @@ export default async function ClientsPage({
   const supabase = await createClient();
   const workspace = await getCurrentWorkspace(supabase, slug);
 
-  const [{ data: clients }, { data: billingRow }] = await Promise.all([
+  const [clientsResult, billingResult] = await Promise.all([
     supabase
       .from("clients")
-      .select("id, name")
+      .select("id, name, created_at, projects(count)")
       .eq("workspace_id", workspace.id)
       .order("created_at", { ascending: true }),
     supabase
@@ -34,60 +41,109 @@ export default async function ClientsPage({
       .maybeSingle(),
   ]);
 
+  if (clientsResult.error) throw clientsResult.error;
+  if (billingResult.error) throw billingResult.error;
+
+  const clients = clientsResult.data ?? [];
   const canManage = workspace.role === "owner" || workspace.role === "member";
-  const clientCount = clients?.length ?? 0;
-  const plan = planFromStatus(billingRow?.subscription_status ?? null);
+  const clientCount = clients.length;
+  const plan = planFromStatus(billingResult.data?.subscription_status ?? null);
   const atFreeLimit = plan === "free" && clientCount >= FREE_CLIENT_LIMIT;
 
+  const newClient = canManage ? (
+    <NewClientDialog
+      workspaceId={workspace.id}
+      workspaceSlug={workspace.slug}
+    />
+  ) : null;
+  const isEmpty = clientCount === 0;
+
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Clients</h1>
-        {canManage ? (
-          <NewClientDialog
-            workspaceId={workspace.id}
-            workspaceSlug={workspace.slug}
-          />
-        ) : null}
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Clients"
+        description="The companies you work for."
+        actions={isEmpty ? null : newClient}
+      />
       {plan === "free" ? (
-        <p className="text-sm text-muted-foreground">
-          {clientCount} / {FREE_CLIENT_LIMIT} clients used.
-          {atFreeLimit && canManage ? (
-            <>
-              {" "}
-              <Link
-                href={`/w/${workspace.slug}/settings/billing`}
-                className="underline"
-              >
-                Upgrade to Pro
-              </Link>{" "}
-              to add more.
-            </>
+        <div
+          data-slot="usage-callout"
+          className="flex w-fit max-w-full flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-4 py-3"
+        >
+          <div className="space-y-2">
+            <p className="text-sm">
+              {clientCount} / {FREE_CLIENT_LIMIT} clients used.
+            </p>
+            <Progress
+              value={Math.min(clientCount, FREE_CLIENT_LIMIT)}
+              max={FREE_CLIENT_LIMIT}
+              aria-label="Clients used on the Free plan"
+              className="w-40 max-w-full"
+            />
+          </div>
+          {atFreeLimit ? (
+            <div className="flex items-center gap-2 text-sm">
+              <TriangleAlert
+                aria-hidden="true"
+                className="size-4 shrink-0 text-warning-foreground"
+              />
+              <span className="font-medium">Limit reached</span>
+              {canManage ? (
+                <Link
+                  href={`/w/${workspace.slug}/settings/billing`}
+                  className="underline underline-offset-4"
+                >
+                  Upgrade to Pro
+                </Link>
+              ) : null}
+            </div>
           ) : null}
-        </p>
+        </div>
       ) : null}
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {(clients ?? []).map((client) => (
-            <TableRow key={client.id}>
-              <TableCell>{client.name}</TableCell>
-            </TableRow>
-          ))}
-          {(clients ?? []).length === 0 ? (
-            <TableRow>
-              <TableCell className="text-muted-foreground">
-                No clients yet.
-              </TableCell>
-            </TableRow>
-          ) : null}
-        </TableBody>
-      </Table>
+      {isEmpty ? (
+        <EmptyState
+          icon={Users}
+          title={canManage ? "Add your first client" : "No clients yet"}
+          description={
+            canManage
+              ? "Clients are the companies you create projects for."
+              : "Clients you work with will show up here."
+          }
+          action={newClient}
+        />
+      ) : (
+        <TableCard>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Projects</TableHead>
+                <TableHead className="hidden sm:table-cell">Added</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {clients.map((client) => (
+                <TableRow key={client.id}>
+                  <TableCell className="font-medium wrap-anywhere whitespace-normal">
+                    <span className="flex items-center gap-2">
+                      <UserAvatar
+                        name={client.name}
+                        size="sm"
+                        className="shrink-0"
+                      />
+                      {client.name}
+                    </span>
+                  </TableCell>
+                  <TableCell>{client.projects[0]?.count ?? 0}</TableCell>
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">
+                    {formatDate(client.created_at)}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableCard>
+      )}
     </div>
   );
 }

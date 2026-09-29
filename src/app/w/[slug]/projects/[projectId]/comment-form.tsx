@@ -1,11 +1,17 @@
 "use client";
 
-import { useActionState, useId, useRef } from "react";
+import { useActionState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { postComment, type ActionResult } from "./actions";
 
 const initialState: ActionResult = { ok: true };
+
+// Deterministic so a deleted comment can hand focus to its update's form.
+export function commentBodyId(updateId: string): string {
+  return `comment-body-${updateId}`;
+}
 
 export function CommentForm({
   workspaceId,
@@ -19,7 +25,7 @@ export function CommentForm({
   updateId: string;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
-  const bodyId = useId();
+  const bodyId = commentBodyId(updateId);
 
   const [state, formAction, pending] = useActionState(
     async (_prev: ActionResult, formData: FormData) => {
@@ -43,13 +49,12 @@ export function CommentForm({
       <Label htmlFor={bodyId} className="sr-only">
         Write a comment
       </Label>
-      <textarea
+      <Textarea
         id={bodyId}
         name="body"
         required
         rows={2}
         placeholder="Write a comment..."
-        className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
       />
       {!state.ok ? (
         <p role="alert" className="text-xs text-destructive">

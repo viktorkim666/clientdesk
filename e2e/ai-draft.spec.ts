@@ -75,7 +75,7 @@ test.describe("AI draft update", () => {
     await page.getByRole("button", { name: "Invite" }).click();
     await page.getByLabel("Email").fill(memberEmail);
     await page.getByLabel("Role", { exact: true }).click();
-    await page.getByRole("option", { name: "member", exact: true }).click();
+    await page.getByRole("option", { name: "Member", exact: true }).click();
     await page.getByRole("button", { name: "Send invitation" }).click();
     await expect(page.getByRole("cell", { name: memberEmail })).toBeVisible();
     const memberInviteUrl = await readLastInviteUrlFor(memberEmail);
@@ -85,7 +85,7 @@ test.describe("AI draft update", () => {
     await page.getByRole("button", { name: "Invite" }).click();
     await page.getByLabel("Email").fill(clientEmail);
     await page.getByLabel("Role", { exact: true }).click();
-    await page.getByRole("option", { name: "client", exact: true }).click();
+    await page.getByRole("option", { name: "Client", exact: true }).click();
     await page.getByLabel("Client", { exact: true }).click();
     await page.getByRole("option", { name: clientName }).click();
     await page.getByRole("button", { name: "Send invitation" }).click();
@@ -117,7 +117,9 @@ test.describe("AI draft update", () => {
     // The client comments, rounding out this project's recent activity.
     await clientPage.goto(projectUrl);
     await clientPage.getByPlaceholder("Write a comment...").fill(commentBody);
-    await clientPage.getByRole("button", { name: "Comment" }).click();
+    await clientPage
+      .getByRole("button", { name: "Comment", exact: true })
+      .click();
     await expect(clientPage.getByText(commentBody)).toBeVisible();
 
     // The member drafts an update: the button is enabled (Pro, configured),

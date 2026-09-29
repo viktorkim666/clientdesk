@@ -1,12 +1,17 @@
 import { notFound, redirect } from "next/navigation";
+import { Check } from "lucide-react";
+import { PageHeader } from "@/components/page-header";
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentWorkspace } from "@/lib/workspace/current";
@@ -82,53 +87,128 @@ export default async function BillingPage({
   const plan = planFromStatus(billingRow?.subscription_status ?? null);
   const renewalDate =
     plan === "pro" && billingRow?.current_period_end
-      ? new Date(billingRow.current_period_end).toLocaleDateString()
+      ? formatDate(billingRow.current_period_end)
       : null;
   const cancelDate =
     plan === "pro" && billingRow?.cancel_at
-      ? new Date(billingRow.cancel_at).toLocaleDateString()
+      ? formatDate(billingRow.cancel_at)
       : null;
 
+  const usedClients = clientCount ?? 0;
+  const isOwner = workspace.role === "owner";
+  const includes =
+    plan === "pro"
+      ? ["Updates, files and comments", "AI update drafts"]
+      : [`Up to ${FREE_CLIENT_LIMIT} clients`, "Updates, files and comments"];
+  const proAdds = ["Unlimited clients", "AI update drafts"];
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">Billing</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            Plan
-            <Badge variant={plan === "pro" ? "default" : "secondary"}>
-              {plan === "pro" ? "Pro" : "Free"}
-            </Badge>
-          </CardTitle>
-          <CardDescription>
-            {plan === "free"
-              ? `${clientCount ?? 0} / ${FREE_CLIENT_LIMIT} clients used`
-              : "Unlimited clients"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {cancelDate ? (
-            <p className="text-sm text-muted-foreground">
-              Cancels on {cancelDate}
-            </p>
-          ) : renewalDate ? (
-            <p className="text-sm text-muted-foreground">
-              Renews on {renewalDate}
-            </p>
+    <div className="space-y-6">
+      <PageHeader
+        title="Billing"
+        description="Your plan and what it includes."
+      />
+      <div
+        className={
+          plan === "free" ? "grid gap-6 md:grid-cols-2" : "grid max-w-2xl"
+        }
+      >
+        <Card>
+          <CardHeader>
+            <CardTitle render={<h2 />} className="flex items-center gap-2">
+              Plan
+              <Badge variant={plan === "pro" ? "default" : "secondary"}>
+                {plan === "pro" ? "Pro" : "Free"}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {plan === "free" ? (
+              <div className="space-y-2">
+                <p className="text-sm">
+                  {usedClients} / {FREE_CLIENT_LIMIT} clients used
+                </p>
+                <Progress
+                  value={Math.min(usedClients, FREE_CLIENT_LIMIT)}
+                  max={FREE_CLIENT_LIMIT}
+                  aria-label="Clients used on the Free plan"
+                />
+              </div>
+            ) : (
+              <p className="text-sm">Unlimited clients</p>
+            )}
+            <FeatureList items={includes} />
+            {cancelDate ? (
+              <p className="text-sm text-muted-foreground">
+                Cancels on {cancelDate}
+              </p>
+            ) : renewalDate ? (
+              <p className="text-sm text-muted-foreground">
+                Renews on {renewalDate}
+              </p>
+            ) : null}
+          </CardContent>
+          {isOwner ? (
+            <CardFooter>
+              <BillingActions
+                workspaceSlug={workspace.slug}
+                plan={plan}
+                configured={configured}
+                showPrimary={plan === "pro"}
+              />
+            </CardFooter>
           ) : null}
-          <p className="text-sm text-muted-foreground">
+        </Card>
+        {plan === "free" ? (
+          <Card>
+            <CardHeader>
+              <CardTitle render={<h2 />}>Pro</CardTitle>
+              <CardDescription>
+                For agencies with a growing roster.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1">
+              <FeatureList items={proAdds} />
+            </CardContent>
+            <CardFooter>
+              {isOwner ? (
+                <BillingActions
+                  workspaceSlug={workspace.slug}
+                  plan={plan}
+                  configured={configured}
+                  showResync={false}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Only the workspace owner can change the plan.
+                </p>
+              )}
+            </CardFooter>
+          </Card>
+        ) : null}
+      </div>
+      <Card className="max-w-2xl bg-muted/50">
+        <CardHeader>
+          <CardTitle render={<h2 />}>Test mode</CardTitle>
+          <CardDescription>
             Billing runs in Stripe test mode. Use test card 4242 4242 4242 4242,
             any future expiry date and any CVC.
-          </p>
-          {workspace.role === "owner" ? (
-            <BillingActions
-              workspaceSlug={workspace.slug}
-              plan={plan}
-              configured={configured}
-            />
-          ) : null}
-        </CardContent>
+          </CardDescription>
+        </CardHeader>
       </Card>
     </div>
+  );
+}
+
+function FeatureList({ items }: { items: string[] }) {
+  return (
+    <ul className="space-y-2 text-sm text-muted-foreground">
+      {items.map((item) => (
+        <li key={item} className="flex items-center gap-2">
+          <Check aria-hidden="true" className="size-4 text-primary" />
+          {item}
+        </li>
+      ))}
+    </ul>
   );
 }

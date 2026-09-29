@@ -27,7 +27,7 @@ test.describe("member row reports server-rejected changes", () => {
     await page.getByRole("button", { name: "Invite" }).click();
     await page.getByLabel("Email").fill(owner2Email);
     await page.getByLabel("Role").click();
-    await page.getByRole("option", { name: "owner", exact: true }).click();
+    await page.getByRole("option", { name: "Owner", exact: true }).click();
     await page.getByRole("button", { name: "Send invitation" }).click();
     await expect(page.getByRole("cell", { name: owner2Email })).toBeVisible();
 
@@ -65,7 +65,7 @@ test.describe("member row reports server-rejected changes", () => {
       .getByRole("button", { name: "Remove" })
       .click();
     await expect(
-      owner2Page.getByRole("cell", { name: "E2E Owner Two" }),
+      owner2Page.getByRole("cell", { name: "E2E Owner Two", exact: true }),
     ).toHaveCount(0);
 
     // Owner 1, still on the stale page, tries to demote the now-removed
@@ -75,7 +75,7 @@ test.describe("member row reports server-rejected changes", () => {
     await page
       .getByRole("combobox", { name: "Role for E2E Owner Two" })
       .click();
-    await page.getByRole("option", { name: "member", exact: true }).click();
+    await page.getByRole("option", { name: "Member", exact: true }).click();
     // `getByRole("alert")` also matches Next.js's own route-announcer div
     // (permanently in the DOM, permanently empty), so this scopes to the
     // member row to reach the error text this component renders.
@@ -84,7 +84,7 @@ test.describe("member row reports server-rejected changes", () => {
     ).toContainText("Could not change this member's role");
     await expect(
       page.getByRole("combobox", { name: "Role for E2E Owner Two" }),
-    ).toContainText("owner");
+    ).toContainText("Owner");
 
     await owner2Context.close();
   });
@@ -114,7 +114,7 @@ test.describe("member row reports server-rejected changes", () => {
     await page.getByRole("button", { name: "Invite" }).click();
     await page.getByLabel("Email").fill(owner2Email);
     await page.getByLabel("Role").click();
-    await page.getByRole("option", { name: "owner", exact: true }).click();
+    await page.getByRole("option", { name: "Owner", exact: true }).click();
     await page.getByRole("button", { name: "Send invitation" }).click();
     await expect(page.getByRole("cell", { name: owner2Email })).toBeVisible();
 
@@ -156,7 +156,7 @@ test.describe("member row reports server-rejected changes", () => {
       .getByRole("button", { name: "Remove" })
       .click();
     await expect(
-      owner2Page.getByRole("cell", { name: "E2E Owner Two" }),
+      owner2Page.getByRole("cell", { name: "E2E Owner Two", exact: true }),
     ).toHaveCount(0);
 
     // Owner 1, still on the stale page, tries to remove the now-already-gone
@@ -173,7 +173,7 @@ test.describe("member row reports server-rejected changes", () => {
     );
     // The row itself stays in the list - the failed removal didn't happen.
     await expect(
-      page.getByRole("cell", { name: "E2E Owner Two" }),
+      page.getByRole("cell", { name: "E2E Owner Two", exact: true }),
     ).toBeVisible();
 
     await owner2Context.close();

@@ -42,12 +42,12 @@ test.describe("select triggers show labels, not raw values", () => {
       "Acme Client Co.",
     );
 
-    // The status select must show the formatted label too ("in progress"),
-    // not the raw enum value ("active").
+    // The status select must show the formatted label too ("On hold"),
+    // not the raw enum value ("on_hold").
     await page.getByLabel("Status").click();
-    await page.getByRole("option", { name: "on hold" }).click();
+    await page.getByRole("option", { name: "On hold" }).click();
     await expect(page.getByRole("combobox", { name: "Status" })).toContainText(
-      "on hold",
+      "On hold",
     );
   });
 
@@ -87,7 +87,7 @@ test.describe("select triggers show labels, not raw values", () => {
       .getByLabel("Email")
       .fill(`invitee-${suffix}@e2e.clientdesk.test`);
     await page.getByLabel("Role").click();
-    await page.getByRole("option", { name: "client", exact: true }).click();
+    await page.getByRole("option", { name: "Client", exact: true }).click();
 
     // Default client selection (the workspace's first client) must show
     // the client's name in the trigger, not its raw UUID.

@@ -1,3 +1,8 @@
+import { Mail } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
+import { PageHeader } from "@/components/page-header";
+import { RoleBadge } from "@/components/role-badge";
+import { TableCard } from "@/components/table-card";
 import {
   Table,
   TableBody,
@@ -6,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { formatDate, formatExpiry } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace/current";
 import { isLastOwner } from "@/lib/permissions";
@@ -39,6 +45,8 @@ export default async function MembersPage({
     .is("accepted_at", null)
     .order("created_at", { ascending: false });
 
+  const now = new Date();
+
   const memberList: MemberRowData[] = (members ?? []).map((member) => ({
     userId: member.user_id,
     role: member.role,
@@ -46,78 +54,111 @@ export default async function MembersPage({
     clientName: member.clients?.name ?? null,
   }));
 
+  const pendingInvitations = invitations ?? [];
+
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Members</h1>
-        <InviteMemberDialog
-          workspaceId={workspace.id}
-          workspaceSlug={workspace.slug}
-          workspaceName={workspace.name}
-          actingRole={workspace.role}
-          clients={clients ?? []}
-        />
-      </div>
+      <PageHeader
+        title="Members"
+        description="People who can work in this workspace."
+        actions={
+          <InviteMemberDialog
+            workspaceId={workspace.id}
+            workspaceSlug={workspace.slug}
+            workspaceName={workspace.name}
+            actingRole={workspace.role}
+            clients={clients ?? []}
+          />
+        }
+      />
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Client</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {memberList.map((member) => (
-            <MemberRow
-              key={member.userId}
-              workspaceId={workspace.id}
-              workspaceSlug={workspace.slug}
-              actingRole={workspace.role}
-              member={member}
-              isLastOwner={isLastOwner(
-                memberList.map((entry) => ({
-                  userId: entry.userId,
-                  role: entry.role,
-                })),
-                member.userId,
-              )}
-            />
-          ))}
-        </TableBody>
-      </Table>
-
-      <div className="space-y-2">
-        <h2 className="text-lg font-semibold">Pending invitations</h2>
-        <Table>
+      <TableCard>
+        <Table aria-label="Members">
           <TableHeader>
             <TableRow>
-              <TableHead>Email</TableHead>
+              <TableHead>Name</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Expires</TableHead>
+              <TableHead className="hidden sm:table-cell">Client</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(invitations ?? []).map((invitation) => (
-              <TableRow key={invitation.id}>
-                <TableCell>{invitation.email}</TableCell>
-                <TableCell>{invitation.role}</TableCell>
-                <TableCell>
-                  {new Date(invitation.expires_at).toLocaleDateString()}
-                </TableCell>
-              </TableRow>
+            {memberList.map((member) => (
+              <MemberRow
+                key={member.userId}
+                workspaceId={workspace.id}
+                workspaceSlug={workspace.slug}
+                actingRole={workspace.role}
+                member={member}
+                isLastOwner={isLastOwner(
+                  memberList.map((entry) => ({
+                    userId: entry.userId,
+                    role: entry.role,
+                  })),
+                  member.userId,
+                )}
+              />
             ))}
-            {(invitations ?? []).length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-muted-foreground">
-                  No pending invitations.
-                </TableCell>
-              </TableRow>
-            ) : null}
           </TableBody>
         </Table>
-      </div>
+      </TableCard>
+
+      <section
+        aria-labelledby="pending-invitations-heading"
+        className="space-y-3"
+      >
+        <h2 id="pending-invitations-heading" className="text-lg font-semibold">
+          Pending invitations
+        </h2>
+        {pendingInvitations.length === 0 ? (
+          <EmptyState
+            icon={Mail}
+            title="No pending invitations"
+            description="Invitations you send will wait here until they are accepted."
+          />
+        ) : (
+          <TableCard>
+            <Table aria-label="Pending invitations">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead className="hidden sm:table-cell">
+                    Expires
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingInvitations.map((invitation) => (
+                  <TableRow key={invitation.id}>
+                    <TableCell className="font-medium wrap-anywhere whitespace-normal">
+                      {invitation.email}
+                      <time
+                        dateTime={invitation.expires_at}
+                        title={formatDate(invitation.expires_at)}
+                        className="block text-xs font-normal text-muted-foreground sm:hidden"
+                      >
+                        {formatExpiry(invitation.expires_at, now)}
+                      </time>
+                    </TableCell>
+                    <TableCell>
+                      <RoleBadge role={invitation.role} />
+                    </TableCell>
+                    <TableCell className="hidden text-muted-foreground sm:table-cell">
+                      <time
+                        dateTime={invitation.expires_at}
+                        title={formatDate(invitation.expires_at)}
+                      >
+                        {formatExpiry(invitation.expires_at, now)}
+                      </time>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableCard>
+        )}
+      </section>
     </div>
   );
 }

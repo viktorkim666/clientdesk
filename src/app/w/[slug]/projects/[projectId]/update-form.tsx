@@ -6,6 +6,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import type { Plan } from "@/lib/billing/plan";
 import { draftOutcomeStatusMessage, streamDraft } from "./draft-client";
 import { postUpdate, type PostUpdateResult } from "./actions";
@@ -95,7 +96,7 @@ export function UpdateForm({
       <Label htmlFor="update-body" className="sr-only">
         Post an update for the client
       </Label>
-      <textarea
+      <Textarea
         id="update-body"
         name="body"
         value={body}
@@ -107,7 +108,6 @@ export function UpdateForm({
         readOnly={drafting}
         rows={3}
         placeholder="Post an update for the client..."
-        className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
       />
       {drafting ? (
         <p
@@ -141,39 +141,41 @@ export function UpdateForm({
         <Button type="submit" size="sm" disabled={pending || drafting}>
           {pending ? "Posting..." : "Post update"}
         </Button>
-        {drafting ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={handleStop}
-          >
-            Stop
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={!canDraft || pending}
-            onClick={() => void handleDraft()}
-            title="Replaces the current text with an AI-drafted update."
-            aria-describedby={DRAFT_HINT_ID}
-          >
-            <Sparkles /> Draft update
-          </Button>
-        )}
-        {plan === "free" ? (
-          <>
-            <Badge variant="secondary">Pro</Badge>
-            <Link
-              href={`/w/${workspaceSlug}/settings/billing`}
-              className="text-sm underline"
+        <span className="inline-flex items-center gap-2 whitespace-nowrap">
+          {drafting ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleStop}
             >
-              Upgrade
-            </Link>
-          </>
-        ) : null}
+              Stop
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={!canDraft || pending}
+              onClick={() => void handleDraft()}
+              title="Replaces the current text with an AI-drafted update."
+              aria-describedby={DRAFT_HINT_ID}
+            >
+              <Sparkles /> Draft update
+            </Button>
+          )}
+          {plan === "free" ? (
+            <>
+              <Badge variant="secondary">Pro</Badge>
+              <Link
+                href={`/w/${workspaceSlug}/settings/billing`}
+                className="text-sm underline"
+              >
+                Upgrade
+              </Link>
+            </>
+          ) : null}
+        </span>
       </div>
       {!aiConfigured && plan === "pro" ? (
         <p className="text-xs text-muted-foreground">

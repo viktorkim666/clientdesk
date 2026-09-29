@@ -64,6 +64,10 @@ To end a test subscription immediately:
 stripe subscriptions cancel <sub_id> --confirm
 ```
 
+## Dashboard, empty and loading states
+
+The workspace dashboard shows active projects, clients and updates from the last 7 days, the five newest projects and a feed of recent updates, comments and file uploads. Every read goes through RLS, so a client only sees their own projects and the activity on them. Lists without data show an empty state that says what goes there and links to the next step (for example, "Add a client first" on Projects). Each route under a workspace has a loading skeleton that matches its layout.
+
 ## AI update draft
 
 Staff on a Pro workspace can click "Draft update" on a project page. The server collects the project's activity from the last 7 days (updates, comments and file names), asks Claude for a short client update and streams the text into the update form. The staff member edits it and posts it like any other update. Free workspaces see an upgrade prompt instead.
@@ -113,5 +117,7 @@ pnpm build
 `pnpm test:e2e` also covers:
 
 - accessibility: axe against WCAG 2 A/AA plus landmark and heading rules (a single top-level `<main>`, one `<h1>`, unique landmarks) on every main route, in both light and dark
+- empty states: a new workspace's dashboard, projects, clients, members and project page each explain themselves and offer the next action
+- accessibility and 375px layout of the empty screens, a filled project page and the populated dashboard
 - layout at a 375px viewport: no horizontal scroll, dialogs fit the viewport, touch targets are at least 44x44
 - interaction polish: pointer cursor on enabled controls, no animation under `prefers-reduced-motion`

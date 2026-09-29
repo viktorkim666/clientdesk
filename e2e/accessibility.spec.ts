@@ -2,6 +2,12 @@ import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { login } from "./support/auth";
 import { readLastInviteUrlFor } from "./support/emails";
+import {
+  buildFilledWorkspace,
+  createClientViaDialog,
+  createProjectAndOpen,
+  signUpOwnerWithEmptyWorkspace,
+} from "./support/workspace";
 
 // axe-core is a transitive dependency of @axe-core/playwright rather than a
 // direct one, so its result type is derived from AxeBuilder#analyze()
@@ -178,7 +184,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.getByRole("button", { name: "Invite" }).click();
       await page.getByLabel("Email").fill(inviteeEmail);
       await page.getByLabel("Role").click();
-      await page.getByRole("option", { name: "member", exact: true }).click();
+      await page.getByRole("option", { name: "Member", exact: true }).click();
       await page.getByRole("button", { name: "Send invitation" }).click();
       await expect(
         page.getByRole("cell", { name: inviteeEmail }),
@@ -199,6 +205,102 @@ for (const colorScheme of ["light", "dark"] as const) {
       } finally {
         await context.close();
       }
+    });
+  });
+}
+
+// Empty and populated screens render different components (empty states,
+// the activity feed, badges, avatars), so each needs its own axe pass.
+for (const colorScheme of ["light", "dark"] as const) {
+  test.describe(`accessibility (empty and filled workspace, ${colorScheme})`, () => {
+    test(`the empty workspace screens have no WCAG 2 A/AA violations in ${colorScheme}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      const workspaceUrl = await signUpOwnerWithEmptyWorkspace(
+        page,
+        `a11y-empty-${colorScheme}`,
+        test.info().workerIndex,
+      );
+      await expect(
+        page.getByRole("main").getByText("No activity yet"),
+      ).toBeVisible();
+      await checkAccessibility(page, `empty dashboard (${colorScheme})`);
+
+      await page.goto(`${workspaceUrl}/projects`);
+      await expect(
+        page.getByRole("main").getByText("Add a client first"),
+      ).toBeVisible();
+      await checkAccessibility(
+        page,
+        `empty projects without clients (${colorScheme})`,
+      );
+
+      await page.goto(`${workspaceUrl}/clients`);
+      await expect(
+        page.getByRole("main").getByText("Add your first client"),
+      ).toBeVisible();
+      await checkAccessibility(page, `empty clients (${colorScheme})`);
+
+      await createClientViaDialog(page, workspaceUrl, "A11y Empty Client");
+      await page.goto(`${workspaceUrl}/projects`);
+      await expect(
+        page.getByRole("main").getByText("Start your first project"),
+      ).toBeVisible();
+      await checkAccessibility(
+        page,
+        `empty projects with a client (${colorScheme})`,
+      );
+
+      await page.goto(`${workspaceUrl}/settings/members`);
+      await expect(
+        page.getByRole("main").getByText("No pending invitations"),
+      ).toBeVisible();
+      await checkAccessibility(page, `empty members (${colorScheme})`);
+
+      await page.goto(`${workspaceUrl}/settings/billing`);
+      await checkAccessibility(page, `billing (${colorScheme})`);
+
+      await createProjectAndOpen(
+        page,
+        workspaceUrl,
+        "A11y Empty Project",
+        "A11y Empty Client",
+      );
+      await expect(
+        page.getByRole("main").getByText("No updates yet"),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("main").getByText("No files yet"),
+      ).toBeVisible();
+      await checkAccessibility(page, `empty project page (${colorScheme})`);
+    });
+
+    test(`a filled project page and a populated dashboard have no WCAG 2 A/AA violations in ${colorScheme}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      const { workspaceUrl } = await buildFilledWorkspace(
+        page,
+        `a11y-filled-${colorScheme}`,
+        test.info().workerIndex,
+      );
+      await checkAccessibility(page, `filled project page (${colorScheme})`);
+
+      await page.getByRole("button", { name: /^Delete comment by / }).click();
+      await expect(page.getByRole("alertdialog")).toBeVisible();
+      await checkAccessibility(
+        page,
+        `delete comment confirmation (${colorScheme})`,
+      );
+      await page.getByRole("button", { name: "Cancel" }).click();
+      await expect(page.getByRole("alertdialog")).toHaveCount(0);
+
+      await page.goto(workspaceUrl);
+      await expect(
+        page.getByRole("region", { name: "Recent activity" }).getByRole("list"),
+      ).toBeVisible();
+      await checkAccessibility(page, `populated dashboard (${colorScheme})`);
     });
   });
 }
