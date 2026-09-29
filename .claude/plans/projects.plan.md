@@ -128,8 +128,10 @@ pnpm build
 
 ## Acceptance
 
-- [ ] All tasks complete
-- [ ] Validation passes locally and in CI
-- [ ] pgTAP covers every cell of the matrix and the listed attack cases
-- [ ] A client downloads a shared file, comments, and receives the update email; another client gets 404
-- [ ] Every route follows the patterns above
+- [x] All tasks complete
+- [x] Validation passes locally and in CI
+- [x] pgTAP covers every cell of the matrix and the listed attack cases
+- [x] A client downloads a shared file, comments, and receives the update email; another client gets 404
+- [x] Every route follows the patterns above
+
+Ticked on 2026-09-29 from the merge record of PR viktorkim666/clientdesk#3, merged after green CI. The checks were not re-run for this note.
