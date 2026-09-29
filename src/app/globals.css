@@ -39,6 +39,8 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-cta-foreground: var(--cta-foreground);
+  --color-cta: var(--cta);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -89,6 +91,14 @@
   --sidebar-accent-foreground: oklch(0.398 0.195 277.366);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.511 0.262 276.966);
+  /* Closing call-to-action panel on the landing page. */
+  --cta: var(--primary);
+  --cta-foreground: var(--primary-foreground);
+  --landing-shadow-inset: inset 0 1px 0 0
+    color-mix(in oklch, white 70%, transparent);
+  --landing-shadow-lift:
+    0 40px 90px -30px color-mix(in oklch, var(--primary) 45%, transparent),
+    0 12px 32px -12px color-mix(in oklch, var(--primary) 18%, transparent);
 }
 
 .dark {
@@ -127,6 +137,14 @@
   --sidebar-accent-foreground: oklch(0.87 0.065 274.039);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.673 0.182 276.935);
+  /* The panel is a deep indigo in dark mode, not the light primary. */
+  --cta: oklch(0.35 0.15 277);
+  --cta-foreground: oklch(1 0 0);
+  --landing-shadow-inset: inset 0 1px 0 0
+    color-mix(in oklch, white 10%, transparent);
+  --landing-shadow-lift:
+    0 40px 100px -24px color-mix(in oklch, var(--primary) 38%, transparent),
+    0 12px 32px -12px color-mix(in oklch, black 60%, transparent);
 }
 
 @layer base {
@@ -144,6 +162,8 @@
   }
   html {
     @apply font-sans;
+    /* Room for the sticky landing header when jumping to an anchor. */
+    scroll-padding-top: 5rem;
   }
   /* Tailwind v4 dropped the default `cursor: pointer` on buttons, so
      enabled interactive controls need it back explicitly. */
@@ -171,5 +191,167 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Soft indigo-tinted shadow with a thin top highlight for product frames.
+   A utility, not a component rule, so it composes with Tailwind's ring-*
+   classes instead of being overridden by their box-shadow. */
+@utility landing-shadow {
+  --tw-inset-shadow: var(--landing-shadow-inset);
+  --tw-shadow: var(--landing-shadow-lift);
+  box-shadow:
+    var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+    var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+
+@layer components {
+  /* Indigo glow and a faint grid behind the hero and the closing panel. */
+  .landing-glow {
+    --glow: 16%;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 60% 50% at 50% 0%,
+      color-mix(in oklch, var(--primary) var(--glow), transparent),
+      transparent 70%
+    );
+  }
+  .dark .landing-glow {
+    --glow: 32%;
+  }
+  .landing-grid {
+    --line: 7%;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(
+        to right,
+        color-mix(in oklch, var(--foreground) var(--line), transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--foreground) var(--line), transparent) 1px,
+        transparent 1px
+      );
+    background-size: 56px 56px;
+    mask-image: radial-gradient(
+      ellipse 70% 55% at 50% 25%,
+      #000 20%,
+      transparent 100%
+    );
+  }
+  .dark .landing-grid {
+    --line: 9%;
+  }
+  /* Overlay for the closing panel: a bright corner glow and a faint grid. */
+  .landing-cta-overlay {
+    --glow: 22%;
+    --line: 10%;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(
+        ellipse 70% 90% at 50% -10%,
+        color-mix(in oklch, var(--cta-foreground) var(--glow), transparent),
+        transparent 65%
+      ),
+      linear-gradient(
+        to right,
+        color-mix(in oklch, var(--cta-foreground) var(--line), transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--cta-foreground) var(--line), transparent) 1px,
+        transparent 1px
+      );
+    background-size:
+      auto,
+      40px 40px,
+      40px 40px;
+    mask-image: radial-gradient(ellipse 80% 90% at 50% 0%, #000, transparent);
+  }
+  .dark .landing-cta-overlay {
+    --glow: 16%;
+    --line: 6%;
+  }
+  /* Tinted stage that seats a feature preview: soft glow plus a faint grid
+     that fades toward the edges. */
+  .landing-stage {
+    --line: 4%;
+    background-color: color-mix(in oklch, var(--muted) 40%, transparent);
+    background-image: radial-gradient(
+      ellipse 70% 60% at 50% 45%,
+      color-mix(in oklch, var(--primary) 14%, transparent),
+      transparent 75%
+    );
+  }
+  .landing-stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(
+        to right,
+        color-mix(in oklch, var(--foreground) var(--line), transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--foreground) var(--line), transparent) 1px,
+        transparent 1px
+      );
+    background-size: 32px 32px;
+    background-position: center;
+    mask-image: radial-gradient(
+      ellipse 75% 70% at 50% 50%,
+      #000 10%,
+      transparent 100%
+    );
+  }
+  .dark .landing-stage {
+    --line: 3%;
+    background-color: color-mix(in oklch, var(--card) 70%, transparent);
+  }
+}
+
+/* Motion is opt-in: unsupported browsers and reduced motion keep the final,
+   static state of every section. */
+@media screen and (prefers-reduced-motion: no-preference) {
+  @keyframes landing-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes landing-rise {
+    from {
+      opacity: 0;
+      transform: translateY(32px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .hero-rise {
+    animation: landing-rise 700ms ease-out both;
+  }
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: landing-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 200px;
+    }
   }
 }

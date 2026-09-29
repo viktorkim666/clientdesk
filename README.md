@@ -68,6 +68,12 @@ stripe subscriptions cancel <sub_id> --confirm
 
 The workspace dashboard shows active projects, clients and updates from the last 7 days, the five newest projects and a feed of recent updates, comments and file uploads. Every read goes through RLS, so a client only sees their own projects and the activity on them. Lists without data show an empty state that says what goes there and links to the next step (for example, "Add a client first" on Projects). Each route under a workspace has a loading skeleton that matches its layout.
 
+## Landing page
+
+The home page explains the product and leads to sign up or log in. It has a sticky header with a skip link, a hero with a product preview, four feature rows (roles and access, files and conversation, AI update drafts, billing), a three-step "How it works", a closing call to action and a footer. Signed-in visitors are still redirected to their workspace.
+
+The previews are built from the app's own components on sample data, so they follow the theme and need no screenshots. They are decorative: each frame has `aria-hidden="true"` and `inert`, so it adds no links or tab stops. Sections fade in on scroll with a CSS-only `animation-timeline: view()`. Browsers without support and visitors who prefer reduced motion get the static page.
+
 ## AI update draft
 
 Staff on a Pro workspace can click "Draft update" on a project page. The server collects the project's activity from the last 7 days (updates, comments and file names), asks Claude for a short client update and streams the text into the update form. The staff member edits it and posts it like any other update. Free workspaces see an upgrade prompt instead.
@@ -121,3 +127,4 @@ pnpm build
 - accessibility and 375px layout of the empty screens, a filled project page and the populated dashboard
 - layout at a 375px viewport: no horizontal scroll, dialogs fit the viewport, touch targets are at least 44x44
 - interaction polish: pointer cursor on enabled controls, no animation under `prefers-reduced-motion`
+- landing page: `e2e/landing.spec.ts` tests link roles, CTAs and anchors, skip link, focus outline and border contrast, reduced motion, and shadow rendering; axe WCAG 2 AA on `/` in both light and dark; no horizontal scroll on `/` at 320, 375, 768 and 1024 px; Lighthouse Accessibility, Best Practices and SEO all 100 on desktop and mobile
