@@ -111,7 +111,7 @@ pnpm build
 
 - [x] All tasks complete
 - [x] Validation passes locally
-- [ ] Validation passes in CI
+- [x] Validation passes in CI
 - [x] Every main route passes axe WCAG 2 AA in light and dark
 - [x] No horizontal scroll at 375 px on any route
 - [x] The theme follows the system by default and remembers a manual choice
