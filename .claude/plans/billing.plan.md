@@ -125,8 +125,10 @@ pnpm build
 
 ## Acceptance
 
-- [ ] All tasks complete
-- [ ] Validation passes locally and in CI
-- [ ] pgTAP covers the billing access matrix, the plan rule per status and the client limit
-- [ ] Test-mode run: upgrade, Pro limits, cancel, back to Free
-- [ ] Every route follows the patterns above
+- [x] All tasks complete
+- [x] Validation passes locally and in CI
+- [x] pgTAP covers the billing access matrix, the plan rule per status and the client limit
+- [x] Test-mode run: upgrade, Pro limits, cancel, back to Free
+- [x] Every route follows the patterns above
+
+Ticked on 2026-09-29 from the merge record of PR viktorkim666/clientdesk#4, including the Stripe sandbox run, merged after green CI. The checks were not re-run for this note.

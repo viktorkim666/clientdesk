@@ -167,8 +167,10 @@ Demo data reset, AI spend caps, demo billing access and upload limits belong to 
 
 ## Acceptance
 
-- [ ] All tasks complete
-- [ ] Validation passes locally and in CI
-- [ ] pgTAP covers every cell of the access matrix and the listed attack cases
-- [ ] A client user sees only their own client's projects in the database and in the UI
-- [ ] Every route follows the patterns above
+- [x] All tasks complete
+- [x] Validation passes locally and in CI
+- [x] pgTAP covers every cell of the access matrix and the listed attack cases
+- [x] A client user sees only their own client's projects in the database and in the UI
+- [x] Every route follows the patterns above
+
+Ticked on 2026-09-29 from the merge record of PR viktorkim666/clientdesk#1, merged after green CI. The checks were not re-run for this note.

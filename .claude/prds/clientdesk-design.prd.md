@@ -62,7 +62,7 @@ We'll know we're right when **a person who has never seen the app can say what i
 
 ## Open Questions
 
-- [ ] Which visual direction? To be decided from 2 or 3 mockups of the dashboard shown during planning.
+- [x] Which visual direction? Decided from 3 mockups: direction A "Indigo focus" (zinc neutrals, one indigo accent, Geist).
 - [ ] Are custom illustrations or motion beyond light transitions worth the time, or do icons and app screenshots carry the landing page?
 - [ ] Does the landing page show static screenshots or a live preview of the app? Screenshots will need a refresh once milestone 5 seeds the demo data.
 

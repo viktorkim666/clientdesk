@@ -115,8 +115,10 @@ pnpm build
 
 ## Acceptance
 
-- [ ] All tasks complete
-- [ ] Validation passes locally and in CI
-- [ ] A Pro member drafts, edits and posts an update, and the client gets the email
-- [ ] Free, client, other-workspace and over-limit callers are refused before Claude is called
-- [ ] Patterns mirrored, not reinvented
+- [x] All tasks complete
+- [x] Validation passes locally and in CI
+- [x] A Pro member drafts, edits and posts an update, and the client gets the email
+- [x] Free, client, other-workspace and over-limit callers are refused before Claude is called
+- [x] Patterns mirrored, not reinvented
+
+Ticked on 2026-09-29 from the merge record of PR viktorkim666/clientdesk#6, including the manual run with a real key, merged after green CI. The checks were not re-run for this note.
