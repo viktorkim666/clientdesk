@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -22,8 +23,19 @@ export function WorkspaceSwitcher({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
-        {currentWorkspace?.name ?? "Workspace"}
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full justify-between"
+          />
+        }
+      >
+        <span className="truncate">
+          {currentWorkspace?.name ?? "Workspace"}
+        </span>
+        <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         {workspaces.map((workspace) => (

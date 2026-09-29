@@ -18,7 +18,7 @@ export default async function SignUpPage({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Create an account</CardTitle>
+        <CardTitle render={<h1 />}>Create an account</CardTitle>
         <CardDescription>Set up your Clientdesk account.</CardDescription>
       </CardHeader>
       <CardContent>

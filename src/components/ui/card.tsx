@@ -1,4 +1,6 @@
 import * as React from "react";
+import { mergeProps } from "@base-ui/react/merge-props";
+import { useRender } from "@base-ui/react/use-render";
 import { cn } from "cn";
 
 function Card({
@@ -32,17 +34,30 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-title"
-      className={cn(
-        "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
-        className,
-      )}
-      {...props}
-    />
-  );
+function CardTitle({
+  className,
+  render,
+  ...props
+}: useRender.ComponentProps<"div"> & React.ComponentProps<"div">) {
+  // Defaults to a <div>, matching every other card, but a page that uses
+  // CardTitle for its actual page title can pass render={<h1 />} so axe's
+  // page-has-heading-one rule sees a real heading.
+  return useRender({
+    defaultTagName: "div",
+    props: mergeProps<"div">(
+      {
+        className: cn(
+          "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
+          className,
+        ),
+      },
+      props,
+    ),
+    render,
+    state: {
+      slot: "card-title",
+    },
+  });
 }
 
 function CardDescription({ className, ...props }: React.ComponentProps<"div">) {

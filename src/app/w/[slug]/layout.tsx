@@ -1,8 +1,11 @@
-import Link from "next/link";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace/current";
-import { WorkspaceSwitcher } from "./workspace-switcher";
-import { SignOutButton } from "./sign-out-button";
+import { AppSidebar } from "./app-sidebar";
 
 export default async function WorkspaceLayout({
   children,
@@ -26,34 +29,32 @@ export default async function WorkspaceLayout({
       Boolean(candidate),
     );
 
-  const isStaff = workspace.role === "owner" || workspace.role === "member";
-
   return (
-    <div className="min-h-svh">
-      <header className="border-b">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-2 p-4">
-          <WorkspaceSwitcher current={workspace.slug} workspaces={workspaces} />
-          <nav className="flex flex-wrap items-center gap-4 text-sm">
-            <Link href={`/w/${workspace.slug}`}>Dashboard</Link>
-            {isStaff ? (
-              <Link href={`/w/${workspace.slug}/clients`}>Clients</Link>
-            ) : null}
-            <Link href={`/w/${workspace.slug}/projects`}>Projects</Link>
-            {isStaff ? (
-              <Link href={`/w/${workspace.slug}/settings/billing`}>
-                Billing
-              </Link>
-            ) : null}
-            {workspace.role === "owner" ? (
-              <Link href={`/w/${workspace.slug}/settings/members`}>
-                Members
-              </Link>
-            ) : null}
-            <SignOutButton />
-          </nav>
+    <SidebarProvider>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:ring-2 focus:ring-ring"
+      >
+        Skip to main content
+      </a>
+      <AppSidebar
+        slug={workspace.slug}
+        role={workspace.role}
+        workspaces={workspaces}
+        userEmail={workspace.userEmail}
+      />
+      <SidebarInset id="main-content" tabIndex={-1}>
+        <header className="flex items-center gap-2 border-b p-4 md:hidden">
+          <SidebarTrigger aria-label="Open navigation" className="size-11" />
+          <span className="font-medium">{workspace.name}</span>
+        </header>
+        <div
+          data-slot="page-container"
+          className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8 md:py-8"
+        >
+          {children}
         </div>
-      </header>
-      <main className="mx-auto max-w-5xl p-4">{children}</main>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

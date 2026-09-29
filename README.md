@@ -92,6 +92,12 @@ The seed creates a Pro workspace for this feature: `ai-draft-pro-agency`, owner 
 
 Each run of `e2e/ai-draft.spec.ts` counts against that workspace's limit of 50 drafts per 24 hours, but Playwright's global setup clears that workspace's `ai_draft_requests` rows before the suite runs, so reruns can't exhaust the limit.
 
+## Theming
+
+The app supports light, dark and system (the default). Inside a workspace, pick a theme from the Account menu at the bottom of the sidebar. Outside a workspace (sign-in, sign-up, onboarding, invite), use the Theme button at the top of the page. The choice is stored in `localStorage` and survives a reload; on system, it follows the OS/browser color scheme.
+
+Color tokens live in `src/app/globals.css` as CSS custom properties (`--background`, `--sidebar`, `--ring`, and so on), each with a light and a dark value. Spacing uses Tailwind's default scale, not custom tokens. New UI should read the color tokens through the Tailwind classes already in use (`bg-background`, `text-foreground`, etc.) rather than hardcoding colors.
+
 ## Tests
 
 ```bash
@@ -103,3 +109,9 @@ pnpm db:test           # pgTAP tests (access control, RPCs)
 pnpm test:e2e          # Playwright, requires Supabase running; starts its own dev server on port 3100
 pnpm build
 ```
+
+`pnpm test:e2e` also covers:
+
+- accessibility: axe against WCAG 2 A/AA plus landmark and heading rules (a single top-level `<main>`, one `<h1>`, unique landmarks) on every main route, in both light and dark
+- layout at a 375px viewport: no horizontal scroll, dialogs fit the viewport, touch targets are at least 44x44
+- interaction polish: pointer cursor on enabled controls, no animation under `prefers-reduced-motion`
