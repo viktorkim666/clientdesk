@@ -13,6 +13,7 @@ export type CurrentWorkspace = {
   role: WorkspaceRole;
   clientId: string | null;
   userId: string;
+  userEmail: string;
 };
 
 /**
@@ -70,6 +71,7 @@ async function getCurrentWorkspaceUncached(
     role: membership.role,
     clientId: membership.client_id,
     userId: claims.claims.sub,
+    userEmail: claims.claims.email ?? "",
   };
 }
 

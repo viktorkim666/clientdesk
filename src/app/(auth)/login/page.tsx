@@ -18,7 +18,7 @@ export default async function LoginPage({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sign in</CardTitle>
+        <CardTitle render={<h1 />}>Sign in</CardTitle>
         <CardDescription>Sign in to your Clientdesk workspace.</CardDescription>
       </CardHeader>
       <CardContent>

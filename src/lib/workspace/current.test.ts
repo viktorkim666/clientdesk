@@ -42,6 +42,7 @@ function buildAccessToken(sub: string): string {
       sub,
       aud: "authenticated",
       role: "authenticated",
+      email: "user@example.com",
       exp: Math.floor(Date.now() / 1000) + 3600,
     }),
   );
@@ -204,6 +205,7 @@ describe("getCurrentWorkspace", () => {
       role: "owner",
       clientId: null,
       userId: USER_ID,
+      userEmail: "user@example.com",
     });
   });
 });

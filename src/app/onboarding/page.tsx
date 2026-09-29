@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { OutsideWorkspaceHeader } from "@/components/outside-workspace-header";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingForm } from "./onboarding-form";
 
@@ -30,11 +31,12 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+    <div className="flex min-h-svh flex-col items-center justify-center gap-6 p-4">
+      <OutsideWorkspaceHeader />
+      <main className="w-full max-w-sm">
         <Card>
           <CardHeader>
-            <CardTitle>Create your workspace</CardTitle>
+            <CardTitle render={<h1 />}>Create your workspace</CardTitle>
             <CardDescription>
               This is where you and your clients will see project status and
               updates.
@@ -44,7 +46,7 @@ export default async function OnboardingPage() {
             <OnboardingForm />
           </CardContent>
         </Card>
-      </div>
+      </main>
     </div>
   );
 }
