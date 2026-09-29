@@ -18,16 +18,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { UserAvatar } from "@/components/user-avatar";
 
 const initialState: AuthActionState = { ok: true };
-
-// Two-letter initials from the local part of an email, e.g.
-// "ai-draft-owner@clientdesk.test" -> "AI".
-function initials(email: string): string {
-  const local = email.split("@")[0] ?? "";
-  const letters = local.replace(/[^a-zA-Z]/g, "");
-  return (letters || local).slice(0, 2).toUpperCase();
-}
 
 export function NavUser({ email }: { email: string }) {
   const [state, formAction, isPending] = useActionState(signOut, initialState);
@@ -50,9 +43,7 @@ export function NavUser({ email }: { email: string }) {
               />
             }
           >
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-accent text-xs font-medium text-sidebar-accent-foreground">
-              {initials(email)}
-            </span>
+            <UserAvatar email={email} />
             <span className="truncate text-sm">{email}</span>
             <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
           </DropdownMenuTrigger>
