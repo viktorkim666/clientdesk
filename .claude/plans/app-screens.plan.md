@@ -211,7 +211,7 @@ pnpm build
 - [x] No horizontal scroll at 375 px on any route
 - [x] Visual QA pass done in both themes at 1280 and 375 px
 - [x] Validation passes locally
-- [ ] Validation passes in CI
+- [x] Validation passes in CI
 - [x] Patterns mirrored, not reinvented
 
 ## Follow-ups
