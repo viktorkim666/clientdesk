@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { login } from "./support/auth";
+import { readLastInviteUrlFor } from "./support/emails";
 
 // axe-core is a transitive dependency of @axe-core/playwright rather than a
 // direct one, so its result type is derived from AxeBuilder#analyze()
@@ -33,6 +34,30 @@ const LANDMARK_AND_HEADING_RULES = [
  * flattens it to one line per node.
  */
 async function checkAccessibility(page: Page, label: string) {
+  // Base UI marks popups that are mid-transition (opening or closing) with
+  // these attributes. axe would measure their half-faded colors, so wait for
+  // every transition to finish first.
+  await expect(
+    page.locator("[data-starting-style], [data-ending-style]"),
+  ).toHaveCount(0);
+  // The enter/exit fades are CSS animations that keep running after Base UI
+  // drops its attributes, so also wait until no finite animation is in flight
+  // (looping ones, like a spinner, never finish and are ignored).
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document
+            .getAnimations()
+            .filter(
+              (animation) =>
+                animation.playState === "running" &&
+                animation.effect?.getComputedTiming().endTime !== Infinity,
+            ).length,
+      ),
+    )
+    .toBe(0);
+
   const wcagResults = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa"])
     .analyze();
@@ -92,6 +117,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.getByRole("button", { name: "New client" }).click();
       await page.getByLabel("Client name").fill(clientName);
       await page.getByRole("button", { name: "Create", exact: true }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
       await expect(page.getByRole("cell", { name: clientName })).toBeVisible();
       await checkAccessibility(page, `clients (${colorScheme})`);
 
@@ -101,6 +127,7 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.getByLabel("Client").click();
       await page.getByRole("option", { name: clientName }).click();
       await page.getByRole("button", { name: "Create", exact: true }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
       await expect(page.getByRole("cell", { name: projectName })).toBeVisible();
       await checkAccessibility(page, `projects (${colorScheme})`);
 
@@ -135,6 +162,43 @@ for (const colorScheme of ["light", "dark"] as const) {
 
       await expect(page).toHaveURL(/\/onboarding$/);
       await checkAccessibility(page, `/onboarding (${colorScheme})`);
+    });
+
+    // The owner sends a real invitation, then a separate signed-out context
+    // opens the emailed link: the view an invitee sees first.
+    test(`/invite/[token] signed out has no WCAG 2 A/AA violations in ${colorScheme}`, async ({
+      page,
+      browser,
+    }) => {
+      await page.emulateMedia({ colorScheme });
+      await loginAsProOwner(page);
+
+      const inviteeEmail = `a11y-invitee-${colorScheme}-${Date.now()}-${test.info().workerIndex}@e2e.clientdesk.test`;
+      await page.getByRole("link", { name: "Members" }).click();
+      await page.getByRole("button", { name: "Invite" }).click();
+      await page.getByLabel("Email").fill(inviteeEmail);
+      await page.getByLabel("Role").click();
+      await page.getByRole("option", { name: "member", exact: true }).click();
+      await page.getByRole("button", { name: "Send invitation" }).click();
+      await expect(
+        page.getByRole("cell", { name: inviteeEmail }),
+      ).toBeVisible();
+
+      const inviteUrl = await readLastInviteUrlFor(inviteeEmail);
+      const context = await browser.newContext({ colorScheme });
+      try {
+        const inviteePage = await context.newPage();
+        await inviteePage.goto(inviteUrl);
+        await expect(
+          inviteePage.getByText("Sign in or create an account"),
+        ).toBeVisible();
+        await checkAccessibility(
+          inviteePage,
+          `/invite/[token] signed out (${colorScheme})`,
+        );
+      } finally {
+        await context.close();
+      }
     });
   });
 }
