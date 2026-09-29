@@ -29,14 +29,14 @@ test.describe("stale rows resync after an in-place revalidation", () => {
     await page.getByRole("button", { name: "Invite" }).click();
     await page.getByLabel("Email").fill(owner2Email);
     await page.getByLabel("Role").click();
-    await page.getByRole("option", { name: "owner", exact: true }).click();
+    await page.getByRole("option", { name: "Owner", exact: true }).click();
     await page.getByRole("button", { name: "Send invitation" }).click();
     await expect(page.getByRole("cell", { name: owner2Email })).toBeVisible();
 
     await page.getByRole("button", { name: "Invite" }).click();
     await page.getByLabel("Email").fill(memberEmail);
     await page.getByLabel("Role").click();
-    await page.getByRole("option", { name: "member", exact: true }).click();
+    await page.getByRole("option", { name: "Member", exact: true }).click();
     await page.getByRole("button", { name: "Send invitation" }).click();
     await expect(page.getByRole("cell", { name: memberEmail })).toBeVisible();
 
@@ -74,7 +74,7 @@ test.describe("stale rows resync after an in-place revalidation", () => {
     await page.reload();
     await expect(
       page.getByRole("combobox", { name: "Role for E2E Plain Member" }),
-    ).toContainText("member");
+    ).toContainText("Member");
 
     // Owner 2, from their own page, promotes the plain member to "owner".
     // `revalidatePath` in `changeMemberRole` invalidates the Members route's
@@ -100,11 +100,11 @@ test.describe("stale rows resync after an in-place revalidation", () => {
       .getByRole("combobox", { name: "Role for E2E Plain Member" })
       .click();
     await owner2Page
-      .getByRole("option", { name: "owner", exact: true })
+      .getByRole("option", { name: "Owner", exact: true })
       .click();
     await expect(
       owner2Page.getByRole("combobox", { name: "Role for E2E Plain Member" }),
-    ).toContainText("owner");
+    ).toContainText("Owner");
 
     // Owner 1, still on the same, now-stale Members page (no navigation, no
     // reload), sends an unrelated invitation. Its own `revalidatePath` call
@@ -115,7 +115,7 @@ test.describe("stale rows resync after an in-place revalidation", () => {
       .getByLabel("Email")
       .fill(`bystander-${suffix}@e2e.clientdesk.test`);
     await page.getByLabel("Role", { exact: true }).click();
-    await page.getByRole("option", { name: "member", exact: true }).click();
+    await page.getByRole("option", { name: "Member", exact: true }).click();
     await page.getByRole("button", { name: "Send invitation" }).click();
     await expect(
       page.getByRole("cell", {
@@ -127,7 +127,7 @@ test.describe("stale rows resync after an in-place revalidation", () => {
     // the stale "member" it showed before this refresh.
     await expect(
       page.getByRole("combobox", { name: "Role for E2E Plain Member" }),
-    ).toContainText("owner");
+    ).toContainText("Owner");
 
     await owner2Context.close();
     await memberContext.close();

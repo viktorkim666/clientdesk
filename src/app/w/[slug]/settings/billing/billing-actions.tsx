@@ -12,10 +12,16 @@ export function BillingActions({
   workspaceSlug,
   plan,
   configured,
+  showPrimary = true,
+  showResync = true,
 }: {
   workspaceSlug: string;
   plan: Plan;
   configured: boolean;
+  // "Upgrade to Pro" / "Manage subscription" and "Resync" can live in
+  // different cards, each rendered by its own instance.
+  showPrimary?: boolean;
+  showResync?: boolean;
 }) {
   const [upgradePending, startUpgrade] = useTransition();
   const [upgradeError, setUpgradeError] = useState<string | null>(null);
@@ -56,37 +62,43 @@ export function BillingActions({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <Button
-          aria-label={plan === "pro" ? "Manage subscription" : "Upgrade to Pro"}
-          disabled={!configured || upgradePending}
-          onClick={handleUpgradeOrManage}
-        >
-          {upgradePending
-            ? "Redirecting…"
-            : plan === "pro"
-              ? "Manage subscription"
-              : "Upgrade to Pro"}
-        </Button>
-        <Button
-          aria-label="Resync"
-          variant="outline"
-          disabled={!configured || resyncPending}
-          onClick={handleResync}
-        >
-          {resyncPending ? "Resyncing…" : "Resync"}
-        </Button>
+        {showPrimary ? (
+          <Button
+            aria-label={
+              plan === "pro" ? "Manage subscription" : "Upgrade to Pro"
+            }
+            disabled={!configured || upgradePending}
+            onClick={handleUpgradeOrManage}
+          >
+            {upgradePending
+              ? "Redirecting…"
+              : plan === "pro"
+                ? "Manage subscription"
+                : "Upgrade to Pro"}
+          </Button>
+        ) : null}
+        {showResync ? (
+          <Button
+            aria-label="Resync"
+            variant="outline"
+            disabled={!configured || resyncPending}
+            onClick={handleResync}
+          >
+            {resyncPending ? "Resyncing…" : "Resync"}
+          </Button>
+        ) : null}
       </div>
-      {!configured ? (
+      {!configured && showPrimary ? (
         <p className="text-xs text-muted-foreground">
           Billing is not configured.
         </p>
       ) : null}
-      {upgradeError ? (
+      {showPrimary && upgradeError ? (
         <p role="alert" className="text-sm text-destructive">
           {upgradeError}
         </p>
       ) : null}
-      {resyncError ? (
+      {showResync && resyncError ? (
         <p role="alert" className="text-sm text-destructive">
           {resyncError}
         </p>

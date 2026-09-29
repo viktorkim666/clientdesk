@@ -1,8 +1,12 @@
 "use client";
 
+import { UserMinus } from "lucide-react";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { RoleBadge } from "@/components/role-badge";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { UserAvatar } from "@/components/user-avatar";
+import { roleLabel } from "@/lib/format";
 import {
   Select,
   SelectContent,
@@ -105,7 +109,17 @@ export function MemberRow({
 
   return (
     <TableRow>
-      <TableCell>{member.fullName}</TableCell>
+      <TableCell className="w-full max-w-0 font-medium sm:w-auto sm:max-w-none">
+        <span className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2">
+          <UserAvatar name={member.fullName} size="sm" className="row-span-2" />
+          <span className="truncate">{member.fullName}</span>
+          {member.clientName ? (
+            <span className="truncate text-xs font-normal text-muted-foreground sm:hidden">
+              {member.clientName}
+            </span>
+          ) : null}
+        </span>
+      </TableCell>
       <TableCell>
         {showRoleSelect ? (
           <div className="flex flex-col gap-1">
@@ -115,16 +129,20 @@ export function MemberRow({
               onValueChange={handleRoleChange}
             >
               <SelectTrigger
-                className="w-28"
+                className="w-24 max-md:data-[size=default]:h-11 sm:w-28"
                 aria-label={`Role for ${member.fullName}`}
                 aria-invalid={roleError !== null}
                 aria-describedby={roleError !== null ? roleErrorId : undefined}
               >
-                <SelectValue />
+                {/* Without a formatter the trigger shows the raw enum value
+                    ("member") until the items mount. */}
+                <SelectValue>
+                  {(value: WorkspaceRole) => roleLabel(value)}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="owner">owner</SelectItem>
-                <SelectItem value="member">member</SelectItem>
+                <SelectItem value="owner">{roleLabel("owner")}</SelectItem>
+                <SelectItem value="member">{roleLabel("member")}</SelectItem>
               </SelectContent>
             </Select>
             {roleError ? (
@@ -138,10 +156,12 @@ export function MemberRow({
             ) : null}
           </div>
         ) : (
-          member.role
+          <RoleBadge role={member.role} />
         )}
       </TableCell>
-      <TableCell>{member.clientName ?? "—"}</TableCell>
+      <TableCell className="hidden sm:table-cell">
+        {member.clientName ?? "—"}
+      </TableCell>
       <TableCell className="text-right">
         {showRemove ? (
           <div className="flex flex-col items-end gap-1">
@@ -149,6 +169,8 @@ export function MemberRow({
               type="button"
               variant="ghost"
               size="sm"
+              className="max-md:h-11 max-sm:w-11"
+              aria-label={`Remove ${member.fullName}`}
               disabled={pending}
               onClick={handleRemove}
               aria-invalid={removeError !== null}
@@ -156,7 +178,10 @@ export function MemberRow({
                 removeError !== null ? removeErrorId : undefined
               }
             >
-              Remove
+              {/* Icon only below sm, so the name column keeps room for a full
+                  name on a phone. */}
+              <UserMinus aria-hidden="true" className="sm:hidden" />
+              <span className="max-sm:sr-only">Remove</span>
             </Button>
             {removeError ? (
               <p

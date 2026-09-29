@@ -8,6 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { statusLabel } from "@/lib/format";
 import { applyOptimisticAction } from "@/lib/optimistic-action";
 import {
   projectStatusSchema,
@@ -71,7 +72,7 @@ export function StatusControl({
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-start gap-1 sm:items-end">
       <Select
         value={status}
         disabled={pending}
@@ -86,15 +87,15 @@ export function StatusControl({
           {/* `Select.Value` displays the raw value unless told how to format
               it (see https://base-ui.com/react/components/select#value):
               without this, picking "on_hold" showed the trigger as literally
-              "on_hold" instead of "on hold". */}
+              "on_hold" instead of "On hold". */}
           <SelectValue>
-            {(value: ProjectStatus) => value.replace("_", " ")}
+            {(value: ProjectStatus) => statusLabel(value)}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {STATUSES.map((candidate) => (
             <SelectItem key={candidate} value={candidate}>
-              {candidate.replace("_", " ")}
+              {statusLabel(candidate)}
             </SelectItem>
           ))}
         </SelectContent>

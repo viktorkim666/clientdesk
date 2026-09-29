@@ -1,6 +1,15 @@
 "use client";
 
+import {
+  File as FileIcon,
+  FileArchive,
+  FileImage,
+  FileText,
+  Files,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useState, useTransition } from "react";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -10,7 +19,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { fileKind, formatDate, type FileKind } from "@/lib/format";
 import { deleteFile, getDownloadUrl } from "./actions";
+import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
+
+// The Files card heading, which takes focus once a deleted row is gone.
+export const FILES_HEADING_ID = "files-heading";
 
 export type ProjectFileRow = {
   id: string;
@@ -19,6 +33,16 @@ export type ProjectFileRow = {
   storagePath: string;
   uploadedBy: string | null;
   uploaderName: string;
+  mimeType: string | null;
+  createdAt: string;
+};
+
+const KIND_ICONS: Record<FileKind, LucideIcon> = {
+  image: FileImage,
+  pdf: FileText,
+  archive: FileArchive,
+  document: FileText,
+  other: FileIcon,
 };
 
 const SIZE_UNITS = ["B", "KB", "MB", "GB"];
@@ -79,7 +103,9 @@ function FileRow({
           projectId,
           file.id,
         );
-        if (!result.ok) {
+        if (result.ok) {
+          document.getElementById(FILES_HEADING_ID)?.focus();
+        } else {
           setDeleteError(result.error);
         }
       } catch {
@@ -89,40 +115,67 @@ function FileRow({
   }
 
   const rowError = downloadError ?? deleteError;
+  const Icon = KIND_ICONS[fileKind(file.mimeType)];
 
   return (
     <TableRow>
-      <TableCell>
-        {file.name}
+      <TableCell className="whitespace-normal">
+        <div className="flex items-center gap-2">
+          <Icon
+            aria-hidden="true"
+            className="size-4 shrink-0 text-muted-foreground"
+          />
+          <span className="min-w-0 font-medium break-all">{file.name}</span>
+        </div>
+        <span className="block pl-6 text-xs font-normal text-muted-foreground sm:hidden">
+          {`${file.uploaderName} · ${formatSize(file.sizeBytes)} · ${formatDate(file.createdAt)}`}
+        </span>
         {rowError ? (
           <p role="alert" className="text-xs text-destructive">
             {rowError}
           </p>
         ) : null}
       </TableCell>
-      <TableCell>{file.uploaderName}</TableCell>
-      <TableCell>{formatSize(file.sizeBytes)}</TableCell>
-      <TableCell className="flex justify-end gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={downloadPending}
-          onClick={handleDownload}
-        >
-          {downloadPending ? "Downloading..." : "Download"}
-        </Button>
-        {canDelete ? (
+      <TableCell className="hidden sm:table-cell">
+        {file.uploaderName}
+      </TableCell>
+      <TableCell className="hidden sm:table-cell">
+        {formatSize(file.sizeBytes)}
+      </TableCell>
+      <TableCell className="hidden sm:table-cell">
+        {formatDate(file.createdAt)}
+      </TableCell>
+      <TableCell>
+        <div className="flex justify-end gap-2">
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            disabled={deletePending}
-            onClick={handleDelete}
+            disabled={downloadPending}
+            onClick={handleDownload}
+            aria-label={`${downloadPending ? "Downloading" : "Download"} ${file.name}`}
           >
-            {deletePending ? "Deleting..." : "Delete"}
+            {downloadPending ? "Downloading..." : "Download"}
           </Button>
-        ) : null}
+          {canDelete ? (
+            <ConfirmDeleteDialog
+              title={`Delete ${file.name}?`}
+              description="The file is removed for everyone on this project and can't be restored."
+              onConfirm={handleDelete}
+              trigger={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={deletePending}
+                  aria-label={`${deletePending ? "Deleting" : "Delete"} ${file.name}`}
+                >
+                  {deletePending ? "Deleting..." : "Delete"}
+                </Button>
+              }
+            />
+          ) : null}
+        </div>
       </TableCell>
     </TableRow>
   );
@@ -143,13 +196,24 @@ export function FileList({
   currentUserId: string;
   isStaff: boolean;
 }) {
+  if (files.length === 0) {
+    return (
+      <EmptyState
+        icon={Files}
+        title="No files yet"
+        description="Files shared on this project will appear here."
+      />
+    );
+  }
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Name</TableHead>
-          <TableHead>Uploaded by</TableHead>
-          <TableHead>Size</TableHead>
+          <TableHead className="hidden sm:table-cell">Uploaded by</TableHead>
+          <TableHead className="hidden sm:table-cell">Size</TableHead>
+          <TableHead className="hidden sm:table-cell">Uploaded</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -164,13 +228,6 @@ export function FileList({
             canDelete={isStaff || file.uploadedBy === currentUserId}
           />
         ))}
-        {files.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={4} className="text-muted-foreground">
-              No files yet.
-            </TableCell>
-          </TableRow>
-        ) : null}
       </TableBody>
     </Table>
   );

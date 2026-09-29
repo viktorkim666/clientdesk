@@ -1,14 +1,9 @@
 "use client";
 
+import { TriangleAlert } from "lucide-react";
 import { useEffect } from "react";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 export default function WorkspaceError({
   error,
@@ -23,19 +18,19 @@ export default function WorkspaceError({
 
   return (
     <div className="flex min-h-[50vh] items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Something went wrong</CardTitle>
-          <CardDescription>
-            This page couldn&apos;t load. Try again, or come back later.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button type="button" onClick={reset} className="w-full">
-            Try again
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="w-full max-w-sm">
+        <EmptyState
+          icon={TriangleAlert}
+          tone="danger"
+          title="Something went wrong"
+          description="This page couldn't load. Try again, or come back later."
+          action={
+            <Button type="button" onClick={reset}>
+              Try again
+            </Button>
+          }
+        />
+      </div>
     </div>
   );
 }

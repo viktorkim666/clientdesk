@@ -31,7 +31,7 @@ async function inviteAndAcceptClientUser(
   await ownerPage.getByRole("button", { name: "Invite" }).click();
   await ownerPage.getByLabel("Email").fill(email);
   await ownerPage.getByLabel("Role").click();
-  await ownerPage.getByRole("option", { name: "client", exact: true }).click();
+  await ownerPage.getByRole("option", { name: "Client", exact: true }).click();
   await ownerPage.getByLabel("Client", { exact: true }).click();
   await ownerPage.getByRole("option", { name: clientName }).click();
   await ownerPage.getByRole("button", { name: "Send invitation" }).click();
@@ -134,27 +134,35 @@ test.describe("end-to-end project flow", () => {
     await expect(page.getByText("Initial rollout is live.")).toBeVisible();
 
     await page.getByLabel("Project status").click();
-    await page.getByRole("option", { name: "on hold" }).click();
+    await page.getByRole("option", { name: "On hold" }).click();
     await expect(
       page.getByRole("combobox", { name: "Project status" }),
-    ).toContainText("on hold");
+    ).toContainText("On hold");
 
     // A failed status change shows an inline error and resyncs the select
     // back to the last server-confirmed status, instead of leaving it on
     // the value the user picked.
     await page.route(projectUrl, (route) => route.abort("failed"));
     await page.getByLabel("Project status").click();
-    await page.getByRole("option", { name: "done" }).click();
+    await page.getByRole("option", { name: "Done" }).click();
     await expect(
       page.getByText("Could not change the project's status"),
     ).toBeVisible();
     await expect(
       page.getByRole("combobox", { name: "Project status" }),
-    ).toContainText("on hold");
+    ).toContainText("On hold");
     await page.unroute(projectUrl);
 
+    // The styled upload zone is the visible label of the hidden native
+    // input; the input keeps its accessible name and is the only match.
+    const fileInput = page.getByLabel("Upload a file");
+    await expect(fileInput).toHaveCount(1);
+    await expect(fileInput).toHaveAttribute("type", "file");
+    await expect(page.getByText("Upload a file")).toBeVisible();
+    await expect(page.getByText(/up to 10 MB/)).toBeVisible();
+
     await page.locator('input[type="file"]').setInputFiles(SAMPLE_PDF_PATH);
-    await expect(page.getByRole("cell", { name: "sample.pdf" })).toBeVisible();
+    await expect(page.getByRole("row", { name: /sample\.pdf/ })).toBeVisible();
 
     // Client A opens the project: sees the update, the status, the file,
     // downloads it, comments and got the update email.
@@ -162,12 +170,12 @@ test.describe("end-to-end project flow", () => {
     await expect(
       clientA.page.getByRole("heading", { name: "Project Alpha" }),
     ).toBeVisible();
-    await expect(clientA.page.getByText("on hold")).toBeVisible();
+    await expect(clientA.page.getByText("On hold")).toBeVisible();
     await expect(
       clientA.page.getByText("Initial rollout is live."),
     ).toBeVisible();
     await expect(
-      clientA.page.getByRole("cell", { name: "sample.pdf" }),
+      clientA.page.getByRole("row", { name: /sample\.pdf/ }),
     ).toBeVisible();
 
     // A failed download shows an inline error on that file's own row,
@@ -199,7 +207,9 @@ test.describe("end-to-end project flow", () => {
     await clientA.page
       .getByPlaceholder("Write a comment...")
       .fill("Thanks, looks great!");
-    await clientA.page.getByRole("button", { name: "Comment" }).click();
+    await clientA.page
+      .getByRole("button", { name: "Comment", exact: true })
+      .click();
     await expect(clientA.page.getByText("Thanks, looks great!")).toBeVisible();
 
     const updateEmail = await readLastProjectUpdateEmailFor(clientAEmail);

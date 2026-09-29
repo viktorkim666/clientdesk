@@ -48,7 +48,7 @@ test.describe("end-to-end role check", () => {
     await page.getByRole("button", { name: "Invite" }).click();
     await page.getByLabel("Email").fill(clientEmail);
     await page.getByLabel("Role").click();
-    await page.getByRole("option", { name: "client", exact: true }).click();
+    await page.getByRole("option", { name: "Client", exact: true }).click();
     await page.getByLabel("Client", { exact: true }).click();
     await page.getByRole("option", { name: "Client A Co." }).click();
     await page.getByRole("button", { name: "Send invitation" }).click();

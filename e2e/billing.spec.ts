@@ -69,7 +69,7 @@ test.describe("billing", () => {
     await page.getByRole("button", { name: "Invite" }).click();
     await page.getByLabel("Email").fill(memberEmail);
     await page.getByLabel("Role").click();
-    await page.getByRole("option", { name: "member", exact: true }).click();
+    await page.getByRole("option", { name: "Member", exact: true }).click();
     await page.getByRole("button", { name: "Send invitation" }).click();
     await expect(page.getByRole("cell", { name: memberEmail })).toBeVisible();
     const memberInviteUrl = await readLastInviteUrlFor(memberEmail);
@@ -78,7 +78,7 @@ test.describe("billing", () => {
     await page.getByRole("button", { name: "Invite" }).click();
     await page.getByLabel("Email").fill(clientEmail);
     await page.getByLabel("Role").click();
-    await page.getByRole("option", { name: "client", exact: true }).click();
+    await page.getByRole("option", { name: "Client", exact: true }).click();
     await page.getByLabel("Client", { exact: true }).click();
     await page.getByRole("option", { name: "Client One Co." }).click();
     await page.getByRole("button", { name: "Send invitation" }).click();

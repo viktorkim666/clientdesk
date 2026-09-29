@@ -7,7 +7,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/status-badge";
+import { UserAvatar } from "@/components/user-avatar";
+import { resolveAuthorName } from "@/lib/activity";
+import { formatDate, formatRelative } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace/current";
 import { getDraftGenerator } from "@/lib/ai";
@@ -16,7 +19,7 @@ import { StatusControl } from "./status-control";
 import { UpdateForm } from "./update-form";
 import { UpdatesList, type UpdateWithComments } from "./updates-list";
 import { FileUploader } from "./file-uploader";
-import { FileList, type ProjectFileRow } from "./file-list";
+import { FILES_HEADING_ID, FileList, type ProjectFileRow } from "./file-list";
 
 // A non-UUID `projectId` makes Postgres raise "invalid input syntax for
 // type uuid" (SQLSTATE 22P02) on the `.eq("id", projectId)` comparison
@@ -35,7 +38,7 @@ export default async function ProjectPage({
 
   const { data: project, error: projectError } = await supabase
     .from("projects")
-    .select("id, name, status, clients(name)")
+    .select("id, name, status, created_at, clients(name)")
     .eq("id", projectId)
     .eq("workspace_id", workspace.id)
     .maybeSingle();
@@ -80,7 +83,9 @@ export default async function ProjectPage({
 
   const filesQuery = supabase
     .from("project_files")
-    .select("id, name, size_bytes, storage_path, uploaded_by")
+    .select(
+      "id, name, size_bytes, storage_path, uploaded_by, mime_type, created_at",
+    )
     .eq("project_id", project.id)
     .order("created_at", { ascending: false })
     .limit(100);
@@ -102,9 +107,12 @@ export default async function ProjectPage({
   const nameByUserId = new Map(
     (members ?? []).map((member) => [
       member.user_id,
-      member.profiles?.full_name ?? "Unknown",
+      member.profiles?.full_name ?? "Unnamed",
     ]),
   );
+
+  // One `now` for the whole page keeps every relative time consistent.
+  const now = new Date();
 
   const updateIds = (updateRows ?? []).map((update) => update.id);
 
@@ -116,13 +124,8 @@ export default async function ProjectPage({
     author_id: string | null;
   };
 
-  // A null author id means the person who wrote this is gone (their
-  // account was deleted); the FKs on these columns are ON DELETE SET NULL
-  // for exactly that case, so the content stays and only the name changes.
   const authorName = (authorId: string | null): string =>
-    authorId === null
-      ? "Former member"
-      : (nameByUserId.get(authorId) ?? "Unknown");
+    resolveAuthorName(nameByUserId, authorId);
 
   const commentRows: CommentRow[] =
     updateIds.length > 0
@@ -146,11 +149,15 @@ export default async function ProjectPage({
     id: update.id,
     body: update.body,
     createdAt: update.created_at,
+    createdLabel: formatRelative(update.created_at, now),
+    createdTitle: formatDate(update.created_at),
     authorName: authorName(update.author_id),
     comments: (commentsByUpdateId.get(update.id) ?? []).map((comment) => ({
       id: comment.id,
       body: comment.body,
       createdAt: comment.created_at,
+      createdLabel: formatRelative(comment.created_at, now),
+      createdTitle: formatDate(comment.created_at),
       authorId: comment.author_id,
       authorName: authorName(comment.author_id),
     })),
@@ -163,24 +170,37 @@ export default async function ProjectPage({
     storagePath: file.storage_path,
     uploadedBy: file.uploaded_by,
     uploaderName: authorName(file.uploaded_by),
+    mimeType: file.mime_type,
+    createdAt: file.created_at,
   }));
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link
-          href={`/w/${workspace.slug}/projects`}
-          className="text-sm text-muted-foreground hover:underline"
-        >
-          ← Projects
-        </Link>
-        <div className="mt-1 flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold">{project.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              {project.clients?.name ?? "—"}
-            </p>
-          </div>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <Link
+            href={`/w/${workspace.slug}/projects`}
+            className="text-sm text-muted-foreground hover:underline"
+          >
+            <span aria-hidden="true">←</span> Projects
+          </Link>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
+            {project.name}
+          </h1>
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+            {project.clients ? (
+              <span className="flex items-center gap-1.5">
+                <UserAvatar name={project.clients.name} size="sm" />
+                {project.clients.name}
+              </span>
+            ) : (
+              <span>—</span>
+            )}
+            <span aria-hidden="true">·</span>
+            <span>Created {formatDate(project.created_at)}</span>
+          </p>
+        </div>
+        <div className="shrink-0">
           {isStaff ? (
             <StatusControl
               workspaceId={workspace.id}
@@ -189,20 +209,16 @@ export default async function ProjectPage({
               status={project.status}
             />
           ) : (
-            <Badge
-              variant={project.status === "active" ? "default" : "secondary"}
-            >
-              {project.status.replace("_", " ")}
-            </Badge>
+            <StatusBadge status={project.status} />
           )}
         </div>
-      </div>
+      </header>
 
       <Card>
         <CardHeader>
-          <CardTitle>Updates</CardTitle>
+          <CardTitle render={<h2 />}>Updates</CardTitle>
           <CardDescription>
-            The latest 50 updates on this project.
+            What the team shared with the client, newest first.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -227,7 +243,9 @@ export default async function ProjectPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Files</CardTitle>
+          <CardTitle render={<h2 id={FILES_HEADING_ID} tabIndex={-1} />}>
+            Files
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <FileUploader

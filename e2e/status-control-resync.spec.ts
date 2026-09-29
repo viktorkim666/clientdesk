@@ -44,7 +44,7 @@ test.describe("a project's stale status resyncs after an in-place revalidation",
     await page.getByRole("button", { name: "Invite" }).click();
     await page.getByLabel("Email").fill(owner2Email);
     await page.getByLabel("Role").click();
-    await page.getByRole("option", { name: "owner", exact: true }).click();
+    await page.getByRole("option", { name: "Owner", exact: true }).click();
     await page.getByRole("button", { name: "Send invitation" }).click();
     await expect(page.getByRole("cell", { name: owner2Email })).toBeVisible();
 
@@ -68,7 +68,7 @@ test.describe("a project's stale status resyncs after an in-place revalidation",
     await page.getByRole("link", { name: "Resync Project" }).click();
     await expect(
       page.getByRole("combobox", { name: "Project status" }),
-    ).toContainText("active");
+    ).toContainText("Active");
     const projectUrl = page.url();
 
     // Owner 2 opens the same project from their own page and changes its
@@ -77,10 +77,10 @@ test.describe("a project's stale status resyncs after an in-place revalidation",
     // already-open tab on its own.
     await owner2Page.goto(projectUrl);
     await owner2Page.getByRole("combobox", { name: "Project status" }).click();
-    await owner2Page.getByRole("option", { name: "on hold" }).click();
+    await owner2Page.getByRole("option", { name: "On hold" }).click();
     await expect(
       owner2Page.getByRole("combobox", { name: "Project status" }),
-    ).toContainText("on hold");
+    ).toContainText("On hold");
 
     // Owner 1, still on the same, now-stale project page (no navigation, no
     // reload), posts an update. `postUpdate` also calls `revalidatePath` on
@@ -97,7 +97,7 @@ test.describe("a project's stale status resyncs after an in-place revalidation",
 
     await expect(
       page.getByRole("combobox", { name: "Project status" }),
-    ).toContainText("on hold");
+    ).toContainText("On hold");
 
     await owner2Context.close();
   });

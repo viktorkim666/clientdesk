@@ -19,6 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { statusLabel } from "@/lib/format";
 import type { ProjectStatus } from "@/lib/validation/project";
 import { createProject, type ProjectActionResult } from "./actions";
 
@@ -107,16 +108,16 @@ export function NewProjectDialog({
             >
               <SelectTrigger id="status">
                 {/* Same fix as the client select above: without a children
-                    function this showed the raw enum value ("in_progress")
-                    instead of the formatted label ("in progress"). */}
+                    function this showed the raw enum value ("on_hold")
+                    instead of the formatted label ("On hold"). */}
                 <SelectValue>
-                  {(value: ProjectStatus) => value.replace("_", " ")}
+                  {(value: ProjectStatus) => statusLabel(value)}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {STATUSES.map((candidate) => (
                   <SelectItem key={candidate} value={candidate}>
-                    {candidate.replace("_", " ")}
+                    {statusLabel(candidate)}
                   </SelectItem>
                 ))}
               </SelectContent>
