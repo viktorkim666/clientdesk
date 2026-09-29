@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: { default: "Clientdesk", template: "%s · Clientdesk" },
   description:
-    "A client portal for small agencies: the agency and its clients see project status, files and updates in one place.",
+    "Clientdesk is a client portal where small agencies and freelancers share project status, files and updates with their clients.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

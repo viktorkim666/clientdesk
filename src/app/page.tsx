@@ -1,6 +1,10 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { FinalCta } from "@/components/landing/final-cta";
+import { Features } from "@/components/landing/features";
+import { Hero } from "@/components/landing/hero";
+import { HowItWorks } from "@/components/landing/how-it-works";
+import { SiteFooter } from "@/components/landing/site-footer";
+import { SiteHeader } from "@/components/landing/site-header";
 import { createClient } from "@/lib/supabase/server";
 import { resolvePostAuthRedirect } from "@/lib/auth/post-login-redirect";
 
@@ -18,24 +22,21 @@ export default async function Home() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 p-4 text-center">
-      <h1 className="text-4xl font-semibold tracking-tight">Clientdesk</h1>
-      <p className="max-w-md text-lg text-muted-foreground">
-        A client portal for small agencies: the agency and its clients see
-        project status, files and updates in one place.
-      </p>
-      <div className="flex gap-3">
-        <Button nativeButton={false} render={<Link href="/login" />}>
-          Log in
-        </Button>
-        <Button
-          variant="outline"
-          nativeButton={false}
-          render={<Link href="/signup" />}
-        >
-          Sign up
-        </Button>
-      </div>
-    </div>
+    <>
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-60 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:ring-2 focus:ring-ring"
+      >
+        Skip to main content
+      </a>
+      <SiteHeader />
+      <main id="main" tabIndex={-1} className="flex-1 outline-none">
+        <Hero />
+        <Features />
+        <HowItWorks />
+        <FinalCta />
+      </main>
+      <SiteFooter />
+    </>
   );
 }

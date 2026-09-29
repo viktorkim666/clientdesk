@@ -331,3 +331,21 @@ for (const colorScheme of ["light", "dark"] as const) {
     });
   });
 }
+
+// Reduced motion keeps every section static, so axe never catches one
+// mid-fade.
+for (const colorScheme of ["light", "dark"] as const) {
+  test.describe(`accessibility (landing, ${colorScheme})`, () => {
+    test(`/ signed out has no WCAG 2 A/AA violations in ${colorScheme}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+
+      await page.goto("/");
+      await expect(
+        page.getByRole("main").getByRole("heading", { level: 1 }),
+      ).toBeVisible();
+      await checkAccessibility(page, `/ (${colorScheme})`);
+    });
+  });
+}

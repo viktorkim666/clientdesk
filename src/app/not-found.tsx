@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
 export default function NotFound() {
   return (
@@ -9,9 +9,9 @@ export default function NotFound() {
         The page you&apos;re looking for doesn&apos;t exist, or you don&apos;t
         have access to it.
       </p>
-      <Button nativeButton={false} render={<Link href="/" />}>
+      <Link href="/" className={buttonVariants()}>
         Back home
-      </Button>
+      </Link>
     </div>
   );
 }

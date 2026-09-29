@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { cn } from "cn";
 import { OutsideWorkspaceHeader } from "@/components/outside-workspace-header";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -38,21 +39,21 @@ export default async function InvitePage({
               <AcceptInvitationForm token={token} />
             ) : (
               <div className="flex gap-2">
-                <Button
-                  className="flex-1"
-                  nativeButton={false}
-                  render={<Link href={`/login?next=/invite/${token}`} />}
+                <Link
+                  href={`/login?next=/invite/${token}`}
+                  className={cn(buttonVariants(), "flex-1")}
                 >
                   Sign in
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  nativeButton={false}
-                  render={<Link href={`/signup?next=/invite/${token}`} />}
+                </Link>
+                <Link
+                  href={`/signup?next=/invite/${token}`}
+                  className={cn(
+                    buttonVariants({ variant: "outline" }),
+                    "flex-1",
+                  )}
                 >
                   Sign up
-                </Button>
+                </Link>
               </div>
             )}
           </CardContent>

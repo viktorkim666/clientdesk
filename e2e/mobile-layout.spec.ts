@@ -22,30 +22,28 @@ const SEEDED_MEMBER_NAMES = [
   "Blake Client B",
 ];
 
+async function expectNoHorizontalScroll(page: Page, label: string) {
+  const overflow = await page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    clientWidth: document.documentElement.clientWidth,
+  }));
+  expect(
+    overflow.scrollWidth,
+    `${label}: scrollWidth ${overflow.scrollWidth} > clientWidth ${overflow.clientWidth}`,
+  ).toBeLessThanOrEqual(overflow.clientWidth);
+
+  // A table that scrolls inside its own container is still a broken
+  // layout at this width, even though the page itself does not scroll.
+  const scrollingTables = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('[data-slot="table-container"]'))
+      .filter((element) => element.scrollWidth > element.clientWidth)
+      .map((element) => element.scrollWidth + ">" + element.clientWidth),
+  );
+  expect(scrollingTables, `${label}: a table scrolls horizontally`).toEqual([]);
+}
+
 test.describe("mobile layout", () => {
   test.use({ viewport: { width: 375, height: 812 } });
-
-  async function expectNoHorizontalScroll(page: Page, label: string) {
-    const overflow = await page.evaluate(() => ({
-      scrollWidth: document.documentElement.scrollWidth,
-      clientWidth: document.documentElement.clientWidth,
-    }));
-    expect(
-      overflow.scrollWidth,
-      `${label}: scrollWidth ${overflow.scrollWidth} > clientWidth ${overflow.clientWidth}`,
-    ).toBeLessThanOrEqual(overflow.clientWidth);
-
-    // A table that scrolls inside its own container is still a broken
-    // layout at this width, even though the page itself does not scroll.
-    const scrollingTables = await page.evaluate(() =>
-      Array.from(document.querySelectorAll('[data-slot="table-container"]'))
-        .filter((element) => element.scrollWidth > element.clientWidth)
-        .map((element) => element.scrollWidth + ">" + element.clientWidth),
-    );
-    expect(scrollingTables, `${label}: a table scrolls horizontally`).toEqual(
-      [],
-    );
-  }
 
   async function expectDialogFitsViewport(page: Page, label: string) {
     const dialog = page.getByRole("dialog");
@@ -301,5 +299,65 @@ test.describe("mobile layout", () => {
       page.getByRole("heading", { name: "Client A Website Redesign" }),
     ).toBeVisible();
     await expectNoHorizontalScroll(page, "client project page");
+  });
+});
+
+async function expectFloatingUpdateInViewport(
+  page: Page,
+  width: number,
+  label: string,
+) {
+  const box = await page.locator("[data-floating-update]").boundingBox();
+  expect(box, `${label}: floating update has no bounding box`).not.toBeNull();
+  if (box) {
+    expect(
+      box.x,
+      `${label}: floating update starts left of the viewport`,
+    ).toBeGreaterThanOrEqual(0);
+    expect(
+      box.x + box.width,
+      `${label}: floating update ends right of the viewport`,
+    ).toBeLessThanOrEqual(width);
+  }
+}
+
+test.describe("narrow layout", () => {
+  test.use({ viewport: { width: 320, height: 700 } });
+
+  test("the landing page has no horizontal scroll at 320px", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expectNoHorizontalScroll(page, "/");
+  });
+});
+
+test.describe("tablet layout", () => {
+  test.use({
+    viewport: { width: 768, height: 1024 },
+    reducedMotion: "reduce",
+  });
+
+  test("the landing page has no horizontal scroll at 768px", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expectNoHorizontalScroll(page, "/");
+    await expectFloatingUpdateInViewport(page, 768, "/ at 768px");
+  });
+});
+
+test.describe("small desktop layout", () => {
+  test.use({
+    viewport: { width: 1024, height: 768 },
+    reducedMotion: "reduce",
+  });
+
+  test("the landing page has no horizontal scroll at 1024px", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expectNoHorizontalScroll(page, "/");
+    await expectFloatingUpdateInViewport(page, 1024, "/ at 1024px");
   });
 });
