@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { login } from "./support/auth";
 import {
   readLastInviteUrlFor,
   readLastProjectUpdateEmailFor,
@@ -15,7 +16,6 @@ import {
 // Playwright's globalSetup (e2e/support/global-setup.ts) clears that
 // workspace's rows before the suite runs, so reruns can't exhaust the cap.
 const PRO_OWNER_EMAIL = "ai-draft-owner@clientdesk.test";
-const SEEDED_PASSWORD = "password123";
 
 test.describe("AI draft update", () => {
   test("a Pro staff member drafts, edits and posts an update from recent activity, and a client is refused both the button and the route", async ({
@@ -37,11 +37,7 @@ test.describe("AI draft update", () => {
     // into another run's "no activity" assertion, and the owner never
     // clicks "Draft update" itself, so its own per-user rate limit window
     // stays empty).
-    await page.goto("/login");
-    await page.getByLabel("Email").fill(PRO_OWNER_EMAIL);
-    await page.getByLabel("Password").fill(SEEDED_PASSWORD);
-    await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page).toHaveURL(/\/w\/[a-z0-9-]+$/);
+    await login(page, PRO_OWNER_EMAIL);
     const workspaceUrl = page.url();
 
     await page.getByRole("link", { name: "Clients" }).click();
@@ -194,11 +190,7 @@ test.describe("AI draft update", () => {
     const clientName = `AI Draft Quiet Client ${suffix}`;
     const projectName = `AI Draft Quiet Project ${suffix}`;
 
-    await page.goto("/login");
-    await page.getByLabel("Email").fill(PRO_OWNER_EMAIL);
-    await page.getByLabel("Password").fill(SEEDED_PASSWORD);
-    await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page).toHaveURL(/\/w\/[a-z0-9-]+$/);
+    await login(page, PRO_OWNER_EMAIL);
 
     await page.getByRole("link", { name: "Clients" }).click();
     await page.getByRole("button", { name: "New client" }).click();
