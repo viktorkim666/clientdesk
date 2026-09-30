@@ -15,7 +15,7 @@ export function SiteFooter() {
             href="https://github.com/viktorkim666/clientdesk"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-7 items-center rounded-sm transition-colors duration-200 hover:text-foreground"
+            className="inline-flex min-h-7 items-center rounded-sm transition-colors duration-200 hover:text-foreground max-sm:min-h-11"
           >
             Source on GitHub
             <span className="sr-only"> (opens in a new tab)</span>

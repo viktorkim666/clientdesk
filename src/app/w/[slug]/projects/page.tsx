@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { UserAvatar } from "@/components/user-avatar";
+import { CompanyAvatar } from "@/components/company-avatar";
 import { formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace/current";
@@ -35,7 +35,8 @@ export default async function ProjectsPage({
     .from("projects")
     .select("id, name, status, created_at, clients(name)")
     .eq("workspace_id", workspace.id)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: false })
+    .order("id");
   const projects = data ?? [];
 
   const canManage = workspace.role === "owner" || workspace.role === "member";
@@ -125,7 +126,7 @@ export default async function ProjectsPage({
                   <TableCell className="hidden sm:table-cell">
                     {project.clients ? (
                       <span className="flex items-center gap-2">
-                        <UserAvatar name={project.clients.name} size="sm" />
+                        <CompanyAvatar size="sm" />
                         {project.clients.name}
                       </span>
                     ) : (

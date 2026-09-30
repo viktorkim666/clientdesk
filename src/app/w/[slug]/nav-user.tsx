@@ -22,7 +22,13 @@ import { UserAvatar } from "@/components/user-avatar";
 
 const initialState: AuthActionState = { ok: true };
 
-export function NavUser({ email }: { email: string }) {
+export function NavUser({
+  email,
+  fullName,
+}: {
+  email: string;
+  fullName: string | null;
+}) {
   const [state, formAction, isPending] = useActionState(signOut, initialState);
   const signOutFormId = useId();
 
@@ -35,21 +41,30 @@ export function NavUser({ email }: { email: string }) {
         <form id={signOutFormId} action={formAction} className="hidden" />
         <DropdownMenu>
           <DropdownMenuTrigger
-            render={
-              <SidebarMenuButton
-                size="lg"
-                aria-label="Account"
-                className="max-md:h-12"
-              />
-            }
+            render={<SidebarMenuButton size="lg" className="max-md:h-12" />}
           >
-            <UserAvatar email={email} />
-            <span className="truncate text-sm">{email}</span>
+            <UserAvatar name={fullName} email={email} />
+            <span className="grid min-w-0 flex-1 text-left leading-tight">
+              {/* The visible text is the name; this prefix keeps "Account" in
+                  the accessible name without replacing it (WCAG 2.5.3). */}
+              <span className="sr-only">Account: </span>
+              <span className="truncate text-sm font-medium">
+                {fullName ?? email}
+              </span>
+              {fullName ? (
+                <span className="truncate text-xs text-foreground/70">
+                  {email}
+                </span>
+              ) : null}
+            </span>
             <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" side="top">
             <DropdownMenuGroup>
-              <DropdownMenuLabel className="truncate" title={email}>
+              <DropdownMenuLabel
+                className="[overflow-wrap:anywhere]"
+                title={email}
+              >
                 {email}
               </DropdownMenuLabel>
             </DropdownMenuGroup>

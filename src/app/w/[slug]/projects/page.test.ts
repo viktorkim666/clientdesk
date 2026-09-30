@@ -32,6 +32,18 @@ function workspace(role: Role = "owner") {
   };
 }
 
+// Every `.order()` call on the projects query, in call order.
+let projectOrders: unknown[][] = [];
+
+// `.order()` resolves like the real builder and chains into more `.order()`s.
+function orderBy(table: string, rows: Row[]) {
+  const order = (...args: unknown[]) => {
+    if (table === "projects") projectOrders.push(args);
+    return Object.assign(Promise.resolve({ data: rows }), { order });
+  };
+  return order;
+}
+
 function stubSupabase({
   projects = [],
   clients = [],
@@ -44,7 +56,7 @@ function stubSupabase({
         select: (columns: string) => {
           if (table === "projects") selects.push(columns);
           return {
-            eq: () => ({ order: () => Promise.resolve({ data: rows }) }),
+            eq: () => ({ order: orderBy(table, rows) }),
           };
         },
       };
@@ -86,6 +98,7 @@ const project = (
 
 beforeEach(() => {
   vi.clearAllMocks();
+  projectOrders = [];
   getCurrentWorkspaceMock.mockResolvedValue(workspace());
 });
 
@@ -102,6 +115,16 @@ describe("ProjectsPage", () => {
     expect(selects).toEqual(["id, name, status, created_at, clients(name)"]);
     expect(text(html)).toContain("Created");
     expect(text(html)).toContain("Mar 3, 2026");
+  });
+
+  it("lists the newest project first, like the dashboard", async () => {
+    stubSupabase({ projects: [project("p1", "Website", "active", "Acme")] });
+    await render();
+
+    expect(projectOrders).toEqual([
+      ["created_at", { ascending: false }],
+      ["id"],
+    ]);
   });
 
   it("lists each project with its link, client and a sentence-case status badge", async () => {

@@ -1,6 +1,5 @@
 "use client";
 
-import { UserMinus } from "lucide-react";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { RoleBadge } from "@/components/role-badge";
@@ -110,8 +109,14 @@ export function MemberRow({
   return (
     <TableRow>
       <TableCell className="w-full max-w-0 font-medium sm:w-auto sm:max-w-none">
-        <span className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2">
-          <UserAvatar name={member.fullName} size="sm" className="row-span-2" />
+        <span className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 max-sm:gap-x-1.5">
+          {/* Spans both lines only when the client name sits under the name
+              (below sm); otherwise the name shares the avatar's row. */}
+          <UserAvatar
+            name={member.fullName}
+            size="sm"
+            className={member.clientName ? "max-sm:row-span-2" : undefined}
+          />
           <span className="truncate">{member.fullName}</span>
           {member.clientName ? (
             <span className="truncate text-xs font-normal text-muted-foreground sm:hidden">
@@ -167,21 +172,17 @@ export function MemberRow({
           <div className="flex flex-col items-end gap-1">
             <Button
               type="button"
-              variant="ghost"
+              variant="destructive"
               size="sm"
-              className="max-md:h-11 max-sm:w-11"
+              className="max-md:h-11 max-sm:px-1.5"
               aria-label={`Remove ${member.fullName}`}
               disabled={pending}
               onClick={handleRemove}
-              aria-invalid={removeError !== null}
               aria-describedby={
                 removeError !== null ? removeErrorId : undefined
               }
             >
-              {/* Icon only below sm, so the name column keeps room for a full
-                  name on a phone. */}
-              <UserMinus aria-hidden="true" className="sm:hidden" />
-              <span className="max-sm:sr-only">Remove</span>
+              Remove
             </Button>
             {removeError ? (
               <p

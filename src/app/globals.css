@@ -27,6 +27,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-on-tint: var(--destructive-on-tint);
   --color-success-foreground: var(--success-foreground);
   --color-success: var(--success);
   --color-warning-foreground: var(--warning-foreground);
@@ -70,6 +71,8 @@
   --accent: oklch(0.967 0.001 286.375);
   --accent-foreground: oklch(0.21 0.006 285.885);
   --destructive: oklch(0.577 0.245 27.325);
+  /* Text on the translucent destructive tint (Button variant destructive). */
+  --destructive-on-tint: color-mix(in oklch, var(--destructive), black 25%);
   --success: oklch(0.95 0.05 160);
   --success-foreground: oklch(0.4 0.09 160);
   --warning: oklch(0.96 0.06 90);
@@ -117,6 +120,7 @@
   --accent: oklch(0.274 0.006 286.033);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
+  --destructive-on-tint: color-mix(in oklch, var(--destructive), white 25%);
   --success: oklch(0.3 0.06 160);
   --success-foreground: oklch(0.9 0.09 160);
   --warning: oklch(0.32 0.07 75);

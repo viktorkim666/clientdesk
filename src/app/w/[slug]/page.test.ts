@@ -316,6 +316,27 @@ describe("WorkspaceDashboardPage", () => {
     expect(text(html)).toMatch(/Active projects.*Clients 3.*Updates this week/);
   });
 
+  it("shortens the long metric labels on phones inside one text node, so the full label stays in the accessible name", async () => {
+    stubSupabase({ clientsCount: { count: 3 } });
+    const html = await render();
+
+    expect(html).toMatch(
+      /Active<span[^>]*\bmax-sm:sr-only\b[^>]*> projects<\/span>/,
+    );
+    expect(html).toMatch(
+      /Updates<span[^>]*\bmax-sm:sr-only\b[^>]*> this week<\/span>/,
+    );
+    // No duplicated, aria-hidden short copy next to a full one.
+    expect(html).not.toMatch(
+      /<span[^>]*aria-hidden="true"[^>]*>Active<\/span>/,
+    );
+    expect(html).not.toMatch(
+      /<span[^>]*aria-hidden="true"[^>]*>Updates<\/span>/,
+    );
+    // "Clients" is already one short word.
+    expect(html).not.toMatch(/sr-only[^>]*>[^<]*Clients/);
+  });
+
   it("shows active projects as N of M and the weekly update count", async () => {
     stubSupabase({
       projectsTotal: { count: 3 },
@@ -383,11 +404,12 @@ describe("WorkspaceDashboardPage", () => {
     expect(text(sections[1] ?? "")).toContain("No activity yet");
   });
 
-  it("uses the workspace name as the h1", async () => {
+  it("titles the h1 Overview and leaves the workspace name to the shell", async () => {
     stubSupabase();
     const html = await render();
 
-    expect(html).toMatch(/<h1[^>]*>Acme Agency<\/h1>/);
+    expect(html).toMatch(/<h1[^>]*>Overview<\/h1>/);
+    expect(html).not.toContain("Acme Agency");
   });
 
   it("lists the projects it is given with client, status and a link", async () => {

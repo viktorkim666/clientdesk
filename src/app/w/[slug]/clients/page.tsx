@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { UserAvatar } from "@/components/user-avatar";
+import { CompanyAvatar } from "@/components/company-avatar";
 import { formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace/current";
@@ -126,11 +126,7 @@ export default async function ClientsPage({
                 <TableRow key={client.id}>
                   <TableCell className="font-medium wrap-anywhere whitespace-normal">
                     <span className="flex items-center gap-2">
-                      <UserAvatar
-                        name={client.name}
-                        size="sm"
-                        className="shrink-0"
-                      />
+                      <CompanyAvatar size="sm" className="shrink-0" />
                       {client.name}
                     </span>
                   </TableCell>
