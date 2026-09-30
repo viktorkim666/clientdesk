@@ -16,20 +16,35 @@ pnpm dev                   # http://localhost:3000
 
 ## Demo workspace (local)
 
-`supabase db reset` seeds a second workspace, Northwind Studio (slug `northwind`), on the Pro plan, with 5 clients and 10 projects (8 active, 1 on hold, 1 done). The names and numbers match the landing preview and the social image.
+`supabase db reset` loads the Northwind Studio template from `supabase/demo/template.sql`: 5 clients and 10 projects on the Pro plan, with updates, comments and files. Nobody signs in to the template itself. "Try as agency" and "Try as client" on the landing page copy it into a private sandbox with fresh users and sign you in without a password. A sandbox lasts 24 hours.
 
-Accounts:
+### Setup
 
-- Maya Chen, `maya@northwind.test` (workspace owner)
-- Leo Park, `leo@northwind.test` (workspace member)
-- Priya Nair, `priya@acmebakery.test` (client, Acme Bakery)
-- Sam Rivera, `sam@lumendental.test` (client, Lumen Dental)
+After `supabase db reset`, upload the template blobs to local Storage:
 
-They all use the local seed password from `supabase/seed.sql`. A client account sees only its own company's projects.
+```bash
+pnpm demo:blobs
+```
 
-Counts like "Active projects" and "Updates this week" are fresh right after a reset and drift as the database ages. The file rows have no stored files behind them, so a download fails locally.
+### Signing in
 
-The test fixtures (Acme Agency) are a separate workspace. Only `e2e/demo-data.spec.ts` and `e2e/visual-polish.spec.ts` sign in to Northwind Studio.
+Each click creates four users (agency owner, member and two clients) through the Supabase admin API, then signs you in on the server with a one-time magic-link token. No password is shown or stored anywhere. The users get addresses on `demo.clientdesk.invalid`. A banner at the top of the workspace says who you are and switches between the agency owner and a client. Sandboxes never see each other's projects, comments or files.
+
+### Limits and cleanup
+
+A visitor can start 3 sandboxes per hour, counted by a salted hash of their IP address; the raw address is never stored. Across all visitors the limit is 40 new sandboxes per hour and 300 live ones. `GET /api/cron/cleanup-demo` with `Authorization: Bearer $CRON_SECRET` deletes expired sandboxes with their users, Storage files and Stripe test customers, plus AI draft request rows older than 7 days. A sandbox's record is removed only after all of that is gone, so anything that failed is retried on the next run, and demo users no sandbox owns are swept after 25 hours. The deploy adds the daily schedule for it.
+
+### Mail and invites in a sandbox
+
+No email leaves a sandbox: the app drops every recipient on `demo.clientdesk.invalid`, and invites are turned off there with a note that says so. Outside a sandbox, when no email provider is configured, the invite dialog shows the invite link to copy.
+
+### Environment variables
+
+Sandboxes need `SUPABASE_SECRET_KEY` for the admin API. Production also needs `DEMO_VISITOR_SALT`, a random string for the visitor hash; without it the demo buttons answer that the live demo isn't available. Locally the salt can stay empty. `CRON_SECRET` is the token the cleanup route expects; without it the route refuses every request.
+
+### Test fixtures
+
+The test fixtures (Acme Agency) are a separate workspace. The e2e specs `e2e/demo-data.spec.ts`, `e2e/visual-polish.spec.ts` and `e2e/destructive-contrast.spec.ts` sign in to Northwind Studio through the demo button.
 
 ## Billing (Stripe test mode)
 
@@ -163,6 +178,11 @@ pnpm build
 - interaction polish: pointer cursor on enabled controls, no animation under `prefers-reduced-motion`
 - landing page: `e2e/landing.spec.ts` tests link roles, CTAs and anchors, skip link, focus outline and border contrast, reduced motion, and shadow rendering; axe WCAG 2 AA on `/` in both light and dark; no horizontal scroll on `/` at 320, 375, 768 and 1024 px; Lighthouse Accessibility, Best Practices and SEO all 100 on desktop and mobile
 - brand: `e2e/brand.spec.ts` tests the SVG icon, favicon.ico with 16 and 32 px frames, Apple icon at 180x180, and social preview metadata including absolute image URLs
+- demo sandbox: `e2e/demo-sandbox.spec.ts` tests that both landing buttons land signed in, the banner switches roles, and two sandboxes don't see each other's data
+- demo invites: `e2e/demo-invites.spec.ts` tests that the Invite button is disabled in a sandbox, with its note
+- invite link: `e2e/invite-link.spec.ts` tests that the invite dialog shows a copyable link when no email provider is configured
 - demo workspace: `e2e/demo-data.spec.ts` tests that the demo owner sees 10 projects and 5 clients in Northwind Studio, a demo client sees only their own projects, and test fixture owners don't see the demo workspace
 - visual polish: `e2e/visual-polish.spec.ts` checks 44px touch targets on phone, unchanged control sizes on desktop, the file and member rows, the backdrop on login and not-found, the sidebar footer and account menu, and the dashboard metrics
 - destructive contrast: `e2e/destructive-contrast.spec.ts` checks that destructive buttons keep 4.5:1 text contrast at rest and on hover, in light and dark
+- pgTAP demo sandbox: `supabase/tests/21_demo_template_test.sql` tests the template: counts, passwordless users with identities, and the pinned Pro plan
+- pgTAP sandbox limits: `supabase/tests/22_demo_sandbox_test.sql` tests clone counts, re-anchored timestamps, sandbox isolation, grants, the three caps and expiry
