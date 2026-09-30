@@ -43,4 +43,12 @@ describe("MemberRow", () => {
     expect(remove).not.toBe("");
     expect(remove).not.toMatch(/\saria-invalid=/);
   });
+
+  it("marks the row and every cell with explicit roles (its display is grid below sm)", () => {
+    const html = render();
+
+    expect(html.match(/<tr[^>]*role="row"/g)).toHaveLength(1);
+    expect(html.match(/<td\b/g)).toHaveLength(4);
+    expect(html.match(/<td[^>]*role="cell"/g)).toHaveLength(4);
+  });
 });

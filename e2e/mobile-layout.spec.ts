@@ -157,8 +157,20 @@ test.describe("mobile layout", () => {
       const fit = await nameCell.evaluate((element) => ({
         clipped: element.scrollWidth > element.clientWidth,
         height: element.getBoundingClientRect().height,
+        // Free width left beside the text. Font metrics differ per platform
+        // (Linux CI renders wider than macOS), so a name that only just fits
+        // here is truncated there.
+        slack: (() => {
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          return element.clientWidth - range.getBoundingClientRect().width;
+        })(),
       }));
       expect(fit.clipped, `${name} is truncated`).toBe(false);
+      expect(
+        fit.slack,
+        `${name} has no slack for wider fonts (slack ${fit.slack}px)`,
+      ).toBeGreaterThanOrEqual(24); // Headroom for wider Linux font metrics in CI.
       expect(fit.height, `${name} wraps`).toBeLessThanOrEqual(24);
     }
 

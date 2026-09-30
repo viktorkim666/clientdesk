@@ -107,9 +107,20 @@ export function MemberRow({
   const removeError = error?.source === "remove" ? error.message : null;
 
   return (
-    <TableRow>
-      <TableCell className="w-full max-w-0 font-medium sm:w-auto sm:max-w-none">
-        <span className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2 max-sm:gap-x-1.5">
+    // Below sm the row is a two-column grid: the name takes the full first
+    // line, and the role control and Remove share the second. A single table
+    // line left the name only a few pixels of slack, so it truncated on
+    // platforms with wider fonts. display:grid drops the native table
+    // semantics in Safari/VoiceOver, hence the explicit roles on row and cells.
+    <TableRow
+      role="row"
+      className="max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto]"
+    >
+      <TableCell
+        role="cell"
+        className="font-medium max-sm:col-span-2 max-sm:min-w-0 max-sm:pb-0"
+      >
+        <span className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2">
           {/* Spans both lines only when the client name sits under the name
               (below sm); otherwise the name shares the avatar's row. */}
           <UserAvatar
@@ -125,7 +136,7 @@ export function MemberRow({
           ) : null}
         </span>
       </TableCell>
-      <TableCell>
+      <TableCell role="cell" className="max-sm:self-center">
         {showRoleSelect ? (
           <div className="flex flex-col gap-1">
             <Select
@@ -164,17 +175,17 @@ export function MemberRow({
           <RoleBadge role={member.role} />
         )}
       </TableCell>
-      <TableCell className="hidden sm:table-cell">
+      <TableCell role="cell" className="hidden sm:table-cell">
         {member.clientName ?? "—"}
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell role="cell" className="text-right max-sm:self-center">
         {showRemove ? (
           <div className="flex flex-col items-end gap-1">
             <Button
               type="button"
               variant="destructive"
               size="sm"
-              className="max-md:h-11 max-sm:px-1.5"
+              className="max-md:h-11"
               aria-label={`Remove ${member.fullName}`}
               disabled={pending}
               onClick={handleRemove}
