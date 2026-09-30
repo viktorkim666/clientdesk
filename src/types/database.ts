@@ -102,6 +102,92 @@ export type Database = {
           },
         ];
       };
+      demo_sandboxes: {
+        Row: {
+          client_one_user_id: string;
+          client_two_user_id: string;
+          created_at: string;
+          deleted_at: string | null;
+          expires_at: string;
+          free_workspace_id: string | null;
+          id: string;
+          member_user_id: string;
+          owner_user_id: string;
+          pending_storage_paths: string[];
+          pending_stripe_customer_ids: string[];
+          visitor_hash: string;
+          workspace_id: string | null;
+        };
+        Insert: {
+          client_one_user_id: string;
+          client_two_user_id: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          expires_at?: string;
+          free_workspace_id?: string | null;
+          id?: string;
+          member_user_id: string;
+          owner_user_id: string;
+          pending_storage_paths?: string[];
+          pending_stripe_customer_ids?: string[];
+          visitor_hash: string;
+          workspace_id?: string | null;
+        };
+        Update: {
+          client_one_user_id?: string;
+          client_two_user_id?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+          expires_at?: string;
+          free_workspace_id?: string | null;
+          id?: string;
+          member_user_id?: string;
+          owner_user_id?: string;
+          pending_storage_paths?: string[];
+          pending_stripe_customer_ids?: string[];
+          visitor_hash?: string;
+          workspace_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "demo_sandboxes_free_workspace_id_fkey";
+            columns: ["free_workspace_id"];
+            isOneToOne: true;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "demo_sandboxes_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: true;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      demo_template: {
+        Row: {
+          anchor: string;
+          workspace_id: string;
+        };
+        Insert: {
+          anchor: string;
+          workspace_id: string;
+        };
+        Update: {
+          anchor?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "demo_template_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: true;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       invitations: {
         Row: {
           accepted_at: string | null;
@@ -369,7 +455,7 @@ export type Database = {
           cancel_at: string | null;
           current_period_end: string | null;
           price_id: string | null;
-          stripe_customer_id: string;
+          stripe_customer_id: string | null;
           stripe_subscription_id: string | null;
           subscription_status: string | null;
           updated_at: string;
@@ -379,7 +465,7 @@ export type Database = {
           cancel_at?: string | null;
           current_period_end?: string | null;
           price_id?: string | null;
-          stripe_customer_id: string;
+          stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
           subscription_status?: string | null;
           updated_at?: string;
@@ -389,7 +475,7 @@ export type Database = {
           cancel_at?: string | null;
           current_period_end?: string | null;
           price_id?: string | null;
-          stripe_customer_id?: string;
+          stripe_customer_id?: string | null;
           stripe_subscription_id?: string | null;
           subscription_status?: string | null;
           updated_at?: string;
@@ -497,6 +583,16 @@ export type Database = {
         };
       };
       claim_ai_draft: { Args: { p_project_id: string }; Returns: string };
+      create_demo_sandbox: {
+        Args: {
+          p_client_one: string;
+          p_client_two: string;
+          p_member: string;
+          p_owner: string;
+          p_visitor_hash: string;
+        };
+        Returns: Json;
+      };
       create_workspace: {
         Args: { p_name: string };
         Returns: {
@@ -512,6 +608,15 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      delete_expired_demo_sandboxes: {
+        Args: Record<PropertyKey, never>;
+        Returns: Json;
+      };
+      demo_can_start: { Args: { p_visitor_hash: string }; Returns: string };
+      finish_demo_sandbox_cleanup: {
+        Args: { p_ids: string[] };
+        Returns: number;
       };
       project_update_recipients: {
         Args: { p_project_id: string };

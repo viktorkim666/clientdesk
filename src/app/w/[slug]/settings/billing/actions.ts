@@ -98,7 +98,12 @@ export async function startCheckout(
       planFromStatus(billingRow.subscription_status) === "pro"
     ) {
       // Already Pro: there is nothing to check out, so this sends the
-      // owner to manage the existing subscription instead.
+      // owner to manage the existing subscription instead. A demo
+      // workspace is pinned to Pro with no Stripe customer, so there is no
+      // subscription to manage.
+      if (!billingRow.stripe_customer_id) {
+        return { ok: false, error: NO_CUSTOMER_ERROR };
+      }
       const portalSession = await stripe.billingPortal.sessions.create({
         customer: billingRow.stripe_customer_id,
         return_url: billingUrl(workspaceSlug),
@@ -178,7 +183,7 @@ export async function openBillingPortal(
       .select("stripe_customer_id")
       .eq("workspace_id", workspace.id)
       .maybeSingle();
-    if (!billingRow) {
+    if (!billingRow?.stripe_customer_id) {
       return { ok: false, error: NO_CUSTOMER_ERROR };
     }
 
@@ -206,7 +211,7 @@ export async function resyncBilling(
   const { workspace } = owner.context;
   const { stripe, admin } = clients;
 
-  let billingRow: { stripe_customer_id: string } | null;
+  let billingRow: { stripe_customer_id: string | null } | null;
   try {
     ({ data: billingRow } = await admin
       .from("workspace_billing")
@@ -217,7 +222,7 @@ export async function resyncBilling(
     console.error("resyncBilling action: billing row lookup failed", error);
     return { ok: false, error: "Could not refresh billing status" };
   }
-  if (!billingRow) {
+  if (!billingRow?.stripe_customer_id) {
     return { ok: false, error: NO_CUSTOMER_ERROR };
   }
 

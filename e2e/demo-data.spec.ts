@@ -1,14 +1,14 @@
 import { test, expect, type Page } from "@playwright/test";
 import { login } from "./support/auth";
+import { startDemo } from "./support/demo";
 
-// The Northwind Studio demo workspace from supabase/seed.sql (UUID prefix 3).
-// It mirrors the landing preview, so the landing, the social image and the
-// real demo tell one story. e2e/visual-polish.spec.ts reads it too.
-const OWNER_EMAIL = "maya@northwind.test";
-const CLIENT_EMAIL = "priya@acmebakery.test";
+// The Northwind Studio demo template from supabase/demo/template.sql. Every
+// visitor gets a private copy through the landing page's demo buttons, and it
+// mirrors the landing preview, so the landing, the social image and the real
+// demo tell one story. e2e/visual-polish.spec.ts reads it too.
 const FIXTURE_OWNER_EMAIL = "owner@clientdesk.test";
 
-// Counts from the Northwind block in supabase/seed.sql: 10 projects (8
+// Counts from the template in supabase/demo/template.sql: 10 projects (8
 // active), 5 clients. Change them together with the seed.
 const SEEDED_PROJECTS = 10;
 const SEEDED_ACTIVE_PROJECTS = 8;
@@ -26,8 +26,7 @@ test.describe("demo workspace", () => {
   test("the demo owner lands on a filled Northwind Studio dashboard", async ({
     page,
   }) => {
-    await login(page, OWNER_EMAIL);
-    await expect(page).toHaveURL(/\/w\/northwind$/);
+    const base = await startDemo(page, "agency");
 
     await expect(
       page.getByRole("button", { name: "Northwind Studio", exact: true }),
@@ -42,7 +41,7 @@ test.describe("demo workspace", () => {
       new RegExp(`Clients\\s*${SEEDED_CLIENTS}$`),
     );
 
-    await page.goto("/w/northwind/projects");
+    await page.goto(`${base}/projects`);
     await expect(page.getByRole("table").getByRole("row")).toHaveCount(
       SEEDED_PROJECTS + HEADER_ROWS,
     );
@@ -50,7 +49,7 @@ test.describe("demo workspace", () => {
       page.getByRole("link", { name: "Website redesign", exact: true }),
     ).toBeVisible();
 
-    await page.goto("/w/northwind/clients");
+    await page.goto(`${base}/clients`);
     await expect(page.getByRole("table").getByRole("row")).toHaveCount(
       SEEDED_CLIENTS + HEADER_ROWS,
     );
@@ -65,10 +64,9 @@ test.describe("demo workspace", () => {
   });
 
   test("a demo client sees only their own projects", async ({ page }) => {
-    await login(page, CLIENT_EMAIL);
-    await expect(page).toHaveURL(/\/w\/northwind$/);
+    const base = await startDemo(page, "client");
 
-    await page.goto("/w/northwind/projects");
+    await page.goto(`${base}/projects`);
     const rows = page.getByRole("table").getByRole("row");
     // Header row plus at least two Acme Bakery projects; the retrying wait
     // also lets the table finish rendering before the rows are read.
@@ -87,7 +85,13 @@ test.describe("demo workspace", () => {
 
   test("the fixture owner does not see the demo workspace", async ({
     page,
+    browser,
   }) => {
+    // A live sandbox, started by a different visitor.
+    const visitor = await browser.newContext();
+    const demoBase = await startDemo(await visitor.newPage(), "agency");
+    await visitor.close();
+
     await login(page, FIXTURE_OWNER_EMAIL);
 
     await page
@@ -98,7 +102,7 @@ test.describe("demo workspace", () => {
       page.getByRole("menuitem", { name: "Northwind Studio" }),
     ).toHaveCount(0);
 
-    await page.goto("/w/northwind");
+    await page.goto(demoBase);
     await expect(
       page.getByRole("heading", { name: "Page not found" }),
     ).toBeVisible();

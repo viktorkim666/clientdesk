@@ -14,9 +14,27 @@ describe("Hero", () => {
     expect(html).toContain("Client portal for small agencies");
   });
 
-  it("links Start free to /signup and Log in to /login", () => {
-    expect(html).toMatch(/<a[^>]*href="\/signup"[^>]*>Start free<\/a>/);
-    expect(html).toMatch(/<a[^>]*href="\/login"[^>]*>Log in<\/a>/);
+  it("offers both demo buttons", () => {
+    expect(html).toMatch(/<button[^>]*value="agency"[^>]*>Try as agency</);
+    expect(html).toMatch(/<button[^>]*value="client"[^>]*>Try as client</);
+  });
+
+  it("has the demo buttons as its only buttons", () => {
+    expect(html.match(/<button[\s>]/g)).toHaveLength(2);
+    // No link dressed as a button (the header carries Log in and Sign up).
+    expect(html).not.toMatch(/<a[^>]*group\/button/);
+    expect(html).not.toMatch(/<a[^>]*href="\/login"/);
+  });
+
+  it("points to the free signup with one quiet text link", () => {
+    const links = html.match(/<a[^>]*href="\/signup"[^>]*>[^<]*<\/a>/g) ?? [];
+
+    expect(links).toHaveLength(1);
+    expect(links[0]).toContain("Or start free with your own workspace");
+    // A finger has to hit it on a phone.
+    expect(links[0]).toContain("min-h-11");
+    // Above sm it still meets the 24px target size (WCAG 2.5.8).
+    expect(links[0]).toContain("sm:min-h-6");
   });
 
   it("names the audience in the lead", () => {

@@ -9,9 +9,10 @@ test.describe("links styled as buttons keep role=link", () => {
     const header = page.getByRole("banner");
     const main = page.getByRole("main");
 
-    // The hero and the closing panel both carry a Log in link.
+    // Log in and Sign up live in the header only; the page body has the demo
+    // buttons and a quiet start-free link.
     await expect(header.getByRole("link", { name: "Log in" })).toHaveCount(1);
-    await expect(main.getByRole("link", { name: "Log in" })).toHaveCount(2);
+    await expect(main.getByRole("link", { name: "Log in" })).toHaveCount(0);
     await expect(header.getByRole("button", { name: "Log in" })).toHaveCount(0);
     await expect(main.getByRole("button", { name: "Log in" })).toHaveCount(0);
     await expect(header.getByRole("link", { name: "Sign up" })).toHaveCount(1);
@@ -19,10 +20,9 @@ test.describe("links styled as buttons keep role=link", () => {
       0,
     );
     // One in the hero and one in the closing panel.
-    await expect(main.getByRole("link", { name: "Start free" })).toHaveCount(2);
-    await expect(main.getByRole("button", { name: "Start free" })).toHaveCount(
-      0,
-    );
+    const startFree = { name: "Or start free with your own workspace" };
+    await expect(main.getByRole("link", startFree)).toHaveCount(2);
+    await expect(main.getByRole("button", startFree)).toHaveCount(0);
   });
 
   test("the not-found page action is a link", async ({ page }) => {
@@ -206,11 +206,11 @@ test.describe("landing layout and navigation", () => {
     }
   });
 
-  test("Start free in the hero opens /signup", async ({ page }) => {
+  test("the start-free link in the hero opens /signup", async ({ page }) => {
     await page.goto("/");
     await page
       .getByRole("main")
-      .getByRole("link", { name: "Start free" })
+      .getByRole("link", { name: "Or start free with your own workspace" })
       .first()
       .click();
     await expect(page).toHaveURL(/\/signup$/);
@@ -315,24 +315,22 @@ async function tabTo(page: Page, target: Locator, maxPresses = 60) {
       return;
     }
   }
-  throw new Error("The link was never reached with the Tab key");
+  throw new Error("The control was never reached with the Tab key");
 }
 
 for (const colorScheme of ["light", "dark"] as const) {
   test.describe(`landing visuals (${colorScheme})`, () => {
     test.use({ viewport: { width: 1280, height: 900 } });
 
-    test("the closing panel links show a visible keyboard focus outline", async ({
+    test("the closing panel controls show a visible keyboard focus outline", async ({
       page,
     }) => {
       await openLanding(page, colorScheme);
 
-      const panelLinks = page
-        .getByRole("main")
-        .locator("section")
-        .last()
-        .getByRole("link");
-      await expect(panelLinks).toHaveCount(2);
+      // The two demo buttons and the start-free link.
+      const panel = page.getByRole("main").locator("section").last();
+      const panelLinks = panel.getByRole("button").or(panel.getByRole("link"));
+      await expect(panelLinks).toHaveCount(3);
 
       for (const link of await panelLinks.all()) {
         await tabTo(page, link);
@@ -402,10 +400,13 @@ for (const colorScheme of ["light", "dark"] as const) {
       const main = page.getByRole("main");
       const cases = [
         {
-          link: main.getByRole("link", { name: "Log in" }).first(),
+          link: main.getByRole("button", { name: "Try as client" }).first(),
           own: false,
         },
-        { link: main.getByRole("link", { name: "Log in" }).last(), own: true },
+        {
+          link: main.getByRole("button", { name: "Try as client" }).last(),
+          own: true,
+        },
       ];
       for (const { link, own } of cases) {
         const border = await link.evaluate(

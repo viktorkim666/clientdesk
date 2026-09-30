@@ -11,6 +11,8 @@ describe("parseServerEnv", () => {
       STRIPE_PRO_PRICE_ID: undefined,
       SUPABASE_SECRET_KEY: undefined,
       ANTHROPIC_API_KEY: undefined,
+      DEMO_VISITOR_SALT: undefined,
+      CRON_SECRET: undefined,
     });
   });
 
@@ -21,6 +23,8 @@ describe("parseServerEnv", () => {
       STRIPE_PRO_PRICE_ID: "price_123",
       SUPABASE_SECRET_KEY: "sb_secret_123",
       ANTHROPIC_API_KEY: "sk-ant-test_123",
+      DEMO_VISITOR_SALT: "salt_123",
+      CRON_SECRET: "cron_123",
     };
 
     const env = parseServerEnv(raw);

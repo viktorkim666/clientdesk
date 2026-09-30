@@ -1,8 +1,7 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
-import { login } from "./support/auth";
+import { startDemo } from "./support/demo";
 import { backgroundStack, contrastRatio } from "./support/contrast";
 
-const OWNER_EMAIL = "maya@northwind.test";
 const MIN_CONTRAST = 4.5;
 
 // Contrast of the button text against its own translucent tint composited
@@ -19,8 +18,8 @@ for (const scheme of ["light", "dark"] as const) {
   test.describe(`destructive button in ${scheme} mode`, () => {
     test.beforeEach(async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });
-      await login(page, OWNER_EMAIL);
-      await page.goto("/w/northwind/settings/members");
+      const base = await startDemo(page, "agency");
+      await page.goto(`${base}/settings/members`);
       await expect(page.locator("html")).toHaveClass(
         scheme === "dark" ? /dark/ : /^(?!.*dark)/,
       );

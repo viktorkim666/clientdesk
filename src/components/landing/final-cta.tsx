@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { cn } from "cn";
-import { buttonVariants } from "@/components/ui/button";
-import { largeButton } from "./large-button";
+import { DemoButtons } from "./demo-buttons";
 
 // Outline for keyboard focus: the base button ring is the panel's own color.
 const panelFocus =
   "focus-visible:border-cta-foreground focus-visible:ring-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-cta-foreground";
+
+// One quiet line under the demo buttons, like the hero's.
+const startFreeLink = cn(
+  panelFocus,
+  "inline-flex min-h-11 items-center rounded-sm text-sm text-cta-foreground/90 underline underline-offset-4 transition-colors duration-200 hover:text-cta-foreground sm:min-h-6",
+);
 
 export function FinalCta() {
   return (
@@ -20,28 +25,10 @@ export function FinalCta() {
             <p className="mt-4 max-w-2xl text-cta-foreground/90">
               Set up a workspace in a minute and invite your first client.
             </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Link
-                href="/signup"
-                className={cn(
-                  buttonVariants({ size: "lg" }),
-                  largeButton,
-                  panelFocus,
-                  "bg-cta-foreground text-cta hover:bg-cta-foreground/90",
-                )}
-              >
-                Start free
-              </Link>
-              <Link
-                href="/login"
-                className={cn(
-                  buttonVariants({ variant: "outline", size: "lg" }),
-                  largeButton,
-                  panelFocus,
-                  "border-cta-foreground/60 bg-transparent text-cta-foreground hover:bg-cta-foreground/10 hover:text-cta-foreground dark:border-cta-foreground/60 dark:bg-transparent dark:hover:bg-cta-foreground/10",
-                )}
-              >
-                Log in
+            <div className="mt-8 flex flex-col items-center gap-4">
+              <DemoButtons variant="panel" />
+              <Link href="/signup" className={startFreeLink}>
+                Or start free with your own workspace
               </Link>
             </div>
           </div>

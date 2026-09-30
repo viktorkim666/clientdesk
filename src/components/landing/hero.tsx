@@ -1,8 +1,11 @@
 import Link from "next/link";
-import { cn } from "cn";
-import { buttonVariants } from "@/components/ui/button";
-import { largeButton } from "./large-button";
+import { DemoButtons } from "./demo-buttons";
 import { ProductPreview } from "./product-preview";
+
+// One quiet line under the demo buttons. Log in and Sign up are in the
+// header, so this is a pointer, not a third and fourth button.
+const startFreeLink =
+  "inline-flex min-h-11 items-center text-sm text-muted-foreground underline underline-offset-4 transition-colors duration-200 hover:text-foreground sm:min-h-6";
 
 export function Hero() {
   return (
@@ -25,22 +28,10 @@ export function Hero() {
             Agencies and freelancers share status, files and updates with their
             clients, so nobody has to ask where things stand.
           </p>
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/signup"
-              className={cn(buttonVariants({ size: "lg" }), largeButton)}
-            >
-              Start free
-            </Link>
-            <Link
-              href="/login"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "lg" }),
-                largeButton,
-                "border-foreground/50 dark:border-foreground/50",
-              )}
-            >
-              Log in
+          <div className="mt-10 flex flex-col items-center gap-4">
+            <DemoButtons variant="hero" />
+            <Link href="/signup" className={startFreeLink}>
+              Or start free with your own workspace
             </Link>
           </div>
         </div>

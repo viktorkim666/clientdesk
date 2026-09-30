@@ -14,6 +14,11 @@ const serverEnvSchema = z.object({
   // back to a fake one outside production (see the plan's "Configuration"
   // decision).
   ANTHROPIC_API_KEY: optionalString(),
+  // Optional: outside production the demo falls back to a fixed development
+  // salt; production without it reports the live demo as not configured.
+  DEMO_VISITOR_SALT: optionalString(),
+  // Optional: without it the cleanup cron route refuses every request.
+  CRON_SECRET: optionalString(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -41,4 +46,6 @@ export const serverEnv = parseServerEnv({
   STRIPE_PRO_PRICE_ID: process.env.STRIPE_PRO_PRICE_ID,
   SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+  DEMO_VISITOR_SALT: process.env.DEMO_VISITOR_SALT,
+  CRON_SECRET: process.env.CRON_SECRET,
 });

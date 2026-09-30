@@ -54,6 +54,17 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # The sandbox copies these files for every demo visitor; only the
+      # end-to-end tests need them, so this runs right before them. The
+      # template rows come from supabase/demo/template.sql, applied when
+      # Supabase started. The script reads the local secret key in memory and
+      # prints no keys.
+      - name: Upload demo template files
+        run: pnpm demo:blobs
+
+      # playwright.config.ts reads the local secret key from the Supabase
+      # stack itself and passes it to the dev server, so .env.local above only
+      # needs the public URL and key.
       - name: End-to-end tests
         run: pnpm test:e2e
 

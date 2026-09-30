@@ -41,12 +41,14 @@ export function AppSidebar({
   workspaces,
   userEmail,
   userFullName,
+  demoDetail,
 }: {
   slug: string;
   role: WorkspaceRole;
   workspaces: { name: string; slug: string }[];
   userEmail: string;
   userFullName: string | null;
+  demoDetail: string | null;
 }) {
   const pathname = usePathname();
   const { setOpenMobile } = useSidebar();
@@ -125,7 +127,11 @@ export function AppSidebar({
         </nav>
       </SidebarContent>
       <SidebarFooter>
-        <NavUser email={userEmail} fullName={userFullName} />
+        <NavUser
+          email={userEmail}
+          fullName={userFullName}
+          demoDetail={demoDetail}
+        />
       </SidebarFooter>
     </Sidebar>
   );

@@ -7,12 +7,16 @@ vi.mock("@/app/(auth)/actions", () => ({ signOut: vi.fn() }));
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { NavUser } from "./nav-user";
 
-function render(fullName: string | null) {
+function render(fullName: string | null, demoDetail: string | null = null) {
   return renderToStaticMarkup(
     createElement(
       SidebarProvider,
       null,
-      createElement(NavUser, { email: "maya@northwind.test", fullName }),
+      createElement(NavUser, {
+        email: "maya@northwind.test",
+        fullName,
+        demoDetail,
+      }),
     ),
   );
 }
@@ -43,5 +47,25 @@ describe("NavUser trigger", () => {
     expect(button.replace(/<[^>]+>/g, "")).toContain(
       "Account: maya@northwind.test",
     );
+  });
+
+  it("shows a demo user's role instead of the sandbox email", () => {
+    const button = trigger(render("Maya Chen", "Owner"));
+    const text = button.replace(/<[^>]+>/g, "");
+
+    expect(text).toContain("Account: Maya Chen");
+    expect(text).toContain("Owner");
+    expect(text).not.toContain("maya@northwind.test");
+    expect(button).toMatch(/<span[^>]*\bsr-only\b[^>]*>Account: <\/span>/);
+  });
+
+  it("names a demo user with no full name by the role, never the email", () => {
+    const text = trigger(render(null, "Client · Acme Bakery")).replace(
+      /<[^>]+>/g,
+      "",
+    );
+
+    expect(text).toContain("Account: Client · Acme Bakery");
+    expect(text).not.toContain("maya@northwind.test");
   });
 });
