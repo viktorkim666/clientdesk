@@ -74,15 +74,23 @@ export default async function MembersPage({
 
       <TableCard>
         <Table aria-label="Members">
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead className="hidden sm:table-cell">Client</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+          {/* Below sm rows are stacked grids, so the column headers no
+              longer line up; they stay available to assistive tech, and the
+              explicit roles keep table semantics where display:grid drops
+              them. */}
+          <TableHeader className="max-sm:sr-only" role="rowgroup">
+            <TableRow role="row">
+              <TableHead role="columnheader">Name</TableHead>
+              <TableHead role="columnheader">Role</TableHead>
+              <TableHead role="columnheader" className="hidden sm:table-cell">
+                Client
+              </TableHead>
+              <TableHead role="columnheader" className="text-right">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody role="rowgroup">
             {memberList.map((member) => (
               <MemberRow
                 key={member.userId}

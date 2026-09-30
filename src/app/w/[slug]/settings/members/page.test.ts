@@ -109,6 +109,21 @@ describe("MembersPage", () => {
     expect(html.match(/<button[^>]*>Invite<\/button>/g)).toHaveLength(1);
   });
 
+  it("keeps table semantics on the members table below sm with explicit roles", async () => {
+    stub([member("u1", "owner", "Ada Lovelace")], []);
+    const html = await render();
+    const table = html.match(
+      /<table[^>]*aria-label="Members"[^]*?<\/table>/,
+    )?.[0];
+
+    expect(table).toBeDefined();
+    expect(table).toMatch(/<thead[^>]*role="rowgroup"/);
+    expect(table).toMatch(/<tbody[^>]*role="rowgroup"/);
+    expect(table?.match(/<th[^>]*role="columnheader"/g)).toHaveLength(4);
+    expect(table?.match(/<th\b/g)).toHaveLength(4);
+    expect(table?.match(/<tr[^>]*role="row"/g)).toHaveLength(2);
+  });
+
   it("renders each member with a hidden avatar next to the name", async () => {
     stub(
       [
