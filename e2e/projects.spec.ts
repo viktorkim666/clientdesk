@@ -135,9 +135,17 @@ test.describe("end-to-end project flow", () => {
 
     await page.getByLabel("Project status").click();
     await page.getByRole("option", { name: "On hold" }).click();
-    await expect(
-      page.getByRole("combobox", { name: "Project status" }),
-    ).toContainText("On hold");
+    const statusSelect = page.getByRole("combobox", {
+      name: "Project status",
+    });
+    await expect(statusSelect).toContainText("On hold");
+    // The select is disabled while its Server Action is in flight, and the
+    // optimistic "On hold" above shows before that action has been sent. Wait
+    // for it to settle before intercepting requests below; otherwise the
+    // route aborts this first change, which reverts to "Active".
+    await expect(statusSelect).toBeEnabled();
+    await expect(statusSelect).not.toHaveAttribute("aria-invalid", "true");
+    await expect(statusSelect).toContainText("On hold");
 
     // A failed status change shows an inline error and resyncs the select
     // back to the last server-confirmed status, instead of leaving it on
