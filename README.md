@@ -14,6 +14,23 @@ cp .env.example .env.local # NEXT_PUBLIC_SITE_URL defaults to localhost:3000; fi
 pnpm dev                   # http://localhost:3000
 ```
 
+## Demo workspace (local)
+
+`supabase db reset` seeds a second workspace, Northwind Studio (slug `northwind`), on the Pro plan, with 5 clients and 10 projects (8 active, 1 on hold, 1 done). The names and numbers match the landing preview and the social image.
+
+Accounts:
+
+- Maya Chen, `maya@northwind.test` (workspace owner)
+- Leo Park, `leo@northwind.test` (workspace member)
+- Priya Nair, `priya@acmebakery.test` (client, Acme Bakery)
+- Sam Rivera, `sam@lumendental.test` (client, Lumen Dental)
+
+They all use the local seed password from `supabase/seed.sql`. A client account sees only its own company's projects.
+
+Counts like "Active projects" and "Updates this week" are fresh right after a reset and drift as the database ages. The file rows have no stored files behind them, so a download fails locally.
+
+The test fixtures (Acme Agency) are a separate workspace. Only `e2e/demo-data.spec.ts` and `e2e/visual-polish.spec.ts` sign in to Northwind Studio.
+
 ## Billing (Stripe test mode)
 
 Billing is optional. Without `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_PRICE_ID` and `SUPABASE_SECRET_KEY`, the billing page shows "Billing is not configured" and CI runs without them.
@@ -108,6 +125,23 @@ The app supports light, dark and system (the default). Inside a workspace, pick 
 
 Color tokens live in `src/app/globals.css` as CSS custom properties (`--background`, `--sidebar`, `--ring`, and so on), each with a light and a dark value. Spacing uses Tailwind's default scale, not custom tokens. New UI should read the color tokens through the Tailwind classes already in use (`bg-background`, `text-foreground`, etc.) rather than hardcoding colors.
 
+## Brand
+
+The logo is an indigo rounded square with two offset white cards (the agency and the client).
+
+- `src/app/icon.svg`: the tab icon in modern browsers
+- `src/app/apple-icon.tsx`: the iOS home-screen icon, a 180×180 PNG rendered with `ImageResponse`
+- `src/app/favicon.ico`: 16 and 32 px frames for older browsers
+- `src/app/opengraph-image.tsx` and `twitter-image.tsx`: the 1200×630 social preview
+
+After changing the mark, rebuild the ICO:
+
+```bash
+pnpm icons:favicon
+```
+
+`metadataBase` in the root layout reads `NEXT_PUBLIC_SITE_URL`, which makes the social image URL absolute. Social platforms need that to fetch it.
+
 ## Tests
 
 ```bash
@@ -128,3 +162,7 @@ pnpm build
 - layout at a 375px viewport: no horizontal scroll, dialogs fit the viewport, touch targets are at least 44x44
 - interaction polish: pointer cursor on enabled controls, no animation under `prefers-reduced-motion`
 - landing page: `e2e/landing.spec.ts` tests link roles, CTAs and anchors, skip link, focus outline and border contrast, reduced motion, and shadow rendering; axe WCAG 2 AA on `/` in both light and dark; no horizontal scroll on `/` at 320, 375, 768 and 1024 px; Lighthouse Accessibility, Best Practices and SEO all 100 on desktop and mobile
+- brand: `e2e/brand.spec.ts` tests the SVG icon, favicon.ico with 16 and 32 px frames, Apple icon at 180x180, and social preview metadata including absolute image URLs
+- demo workspace: `e2e/demo-data.spec.ts` tests that the demo owner sees 10 projects and 5 clients in Northwind Studio, a demo client sees only their own projects, and test fixture owners don't see the demo workspace
+- visual polish: `e2e/visual-polish.spec.ts` checks 44px touch targets on phone, unchanged control sizes on desktop, the file and member rows, the backdrop on login and not-found, the sidebar footer and account menu, and the dashboard metrics
+- destructive contrast: `e2e/destructive-contrast.spec.ts` checks that destructive buttons keep 4.5:1 text contrast at rest and on hover, in light and dark
