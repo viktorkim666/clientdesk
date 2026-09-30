@@ -151,5 +151,5 @@ pnpm test:e2e
 - [x] Demo workspace seeded; fixture tests unchanged and green
 - [x] Company avatars, dashboard title and balance follow-ups closed
 - [x] Every screen reviewed with demo data in both themes at 1440 and 375
-- [ ] Validation passes locally and in CI
+- [x] Validation passes locally and in CI
 - [x] Patterns mirrored, not reinvented
