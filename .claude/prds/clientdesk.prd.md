@@ -54,14 +54,14 @@ For the portfolio, we'll know we're right when **an Upwork client can open the l
 
 <!-- Status: pending | in-progress | complete -->
 
-| #   | Milestone            | Outcome                                                                                                          | Status      | Plan                                              |
-| --- | -------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------- |
-| 1   | Workspaces and roles | A user signs up, creates a workspace, and invites a member and a client; the client sees only their own projects | complete    | `.claude/plans/workspaces-and-roles.plan.md`      |
-| 2   | Projects             | The agency posts status, files and updates; the client reads, downloads, comments and gets an email              | complete    | `.claude/plans/projects.plan.md`                  |
-| 3   | Billing              | A workspace upgrades to Pro and manages its own subscription; Free-plan limits are enforced                      | complete    | `.claude/plans/billing.plan.md`                   |
-| 4   | AI update draft      | A member generates, edits and publishes a weekly client update                                                   | complete    | `.claude/plans/ai-update-draft.plan.md`           |
-| 4.5 | Design               | The app and a landing page look like a finished product in both themes and on a phone                            | complete    | `.claude/prds/clientdesk-design.prd.md`           |
-| 5   | Demo and launch      | A visitor tries both roles in one click on the live site; README and walkthrough video are published             | in-progress | `.claude/plans/brand-and-polish.plan.md` (1 of 2) |
+| #   | Milestone            | Outcome                                                                                                          | Status      | Plan                                                                                                |
+| --- | -------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------- |
+| 1   | Workspaces and roles | A user signs up, creates a workspace, and invites a member and a client; the client sees only their own projects | complete    | `.claude/plans/workspaces-and-roles.plan.md`                                                        |
+| 2   | Projects             | The agency posts status, files and updates; the client reads, downloads, comments and gets an email              | complete    | `.claude/plans/projects.plan.md`                                                                    |
+| 3   | Billing              | A workspace upgrades to Pro and manages its own subscription; Free-plan limits are enforced                      | complete    | `.claude/plans/billing.plan.md`                                                                     |
+| 4   | AI update draft      | A member generates, edits and publishes a weekly client update                                                   | complete    | `.claude/plans/ai-update-draft.plan.md`                                                             |
+| 4.5 | Design               | The app and a landing page look like a finished product in both themes and on a phone                            | complete    | `.claude/prds/clientdesk-design.prd.md`                                                             |
+| 5   | Demo and launch      | A visitor tries both roles in one click on the live site; README and walkthrough video are published             | in-progress | `.claude/plans/brand-and-polish.plan.md` (1 of 2), `.claude/plans/demo-and-launch.plan.md` (2 of 2) |
 
 ## Open Questions
 
