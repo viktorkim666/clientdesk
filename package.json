@@ -16,6 +16,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "icons:favicon": "node scripts/generate-favicon.mts",
+    "demo:blobs": "node scripts/demo/upload-template-blobs.mts",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck",
     "prepare": "husky"
   },

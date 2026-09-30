@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { login } from "./support/auth";
+import { startDemo } from "./support/demo";
 
 test.describe("logo mark", () => {
   test("the cards are white in dark mode, like icon.svg", async ({ page }) => {
@@ -19,7 +20,6 @@ test.describe("logo mark", () => {
   });
 });
 
-const OWNER_EMAIL = "maya@northwind.test";
 const MIN_TARGET = 44;
 
 // Every visible native control plus the links that look like buttons or sit
@@ -46,8 +46,8 @@ async function smallTargets(page: Page): Promise<string[]> {
   }, MIN_TARGET);
 }
 
-async function openFirstProject(page: Page) {
-  await page.goto("/w/northwind/projects");
+async function openFirstProject(page: Page, base: string) {
+  await page.goto(`${base}/projects`);
   await page
     .getByRole("link", { name: "Website redesign", exact: true })
     .first()
@@ -80,14 +80,14 @@ test.describe("tap targets on a phone", () => {
   test("dashboard, project and members controls are at least 44px tall", async ({
     page,
   }) => {
-    await login(page, OWNER_EMAIL);
+    const base = await startDemo(page, "agency");
     await expect(page.getByRole("main")).toBeVisible();
     expect(await smallTargets(page), "dashboard").toEqual([]);
 
-    await openFirstProject(page);
+    await openFirstProject(page, base);
     expect(await smallTargets(page), "project").toEqual([]);
 
-    await page.goto("/w/northwind/settings/members");
+    await page.goto(`${base}/settings/members`);
     await expect(page.getByRole("table").first()).toBeVisible();
     expect(await smallTargets(page), "members").toEqual([]);
   });
@@ -97,8 +97,8 @@ test.describe("select options on a phone", () => {
   test.use({ viewport: { width: 375, height: 812 } });
 
   test("are as tall as the trigger they open from", async ({ page }) => {
-    await login(page, OWNER_EMAIL);
-    await openFirstProject(page);
+    const base = await startDemo(page, "agency");
+    await openFirstProject(page, base);
 
     await page
       .getByRole("combobox", { name: "Project status", exact: true })
@@ -121,8 +121,8 @@ test.describe("dialog close button on a phone", () => {
   test("sits inside the dialog corner without covering the title", async ({
     page,
   }) => {
-    await login(page, OWNER_EMAIL);
-    await page.goto("/w/northwind/projects");
+    const base = await startDemo(page, "agency");
+    await page.goto(`${base}/projects`);
     await page
       .getByRole("button", { name: "New project", exact: true })
       .first()
@@ -189,8 +189,8 @@ test.describe("control sizes on desktop", () => {
       DESKTOP_HEIGHTS.defaultControl,
     ]);
 
-    await login(page, OWNER_EMAIL);
-    await openFirstProject(page);
+    const base = await startDemo(page, "agency");
+    await openFirstProject(page, base);
     const post = await page
       .getByRole("button", { name: "Post update", exact: true })
       .boundingBox();
@@ -207,8 +207,8 @@ test.describe("project files", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await login(page, OWNER_EMAIL);
-    await openFirstProject(page);
+    const base = await startDemo(page, "agency");
+    await openFirstProject(page, base);
 
     const rows = page
       .getByRole("row")
@@ -260,8 +260,8 @@ test.describe("project files", () => {
 
   test("Download and Delete look like buttons on desktop", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await login(page, OWNER_EMAIL);
-    await openFirstProject(page);
+    const base = await startDemo(page, "agency");
+    await openFirstProject(page, base);
 
     const row = page
       .getByRole("row")
@@ -297,8 +297,8 @@ for (const width of [1440, 375]) {
     test("the name lines up with its avatar and Remove is a labelled destructive button", async ({
       page,
     }) => {
-      await login(page, OWNER_EMAIL);
-      await page.goto("/w/northwind/settings/members");
+      const base = await startDemo(page, "agency");
+      await page.goto(`${base}/settings/members`);
       const row = page.getByRole("row", { name: /^Priya Nair/ });
       await expect(row).toBeVisible();
 
@@ -414,19 +414,24 @@ test.describe("auth and 404 backdrop", () => {
   });
 });
 
+// A real account, signed in with a password: its footer shows the full name
+// with the email muted below it.
+const REAL_OWNER_EMAIL = "owner@clientdesk.test";
+const REAL_OWNER_NAME = "Olivia Owner";
+
 test.describe("sidebar footer", () => {
   test("shows the full name with the email muted below it", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await login(page, OWNER_EMAIL);
+    await login(page, REAL_OWNER_EMAIL);
 
     const account = page.getByRole("button", { name: "Account" });
-    const name = account.getByText("Maya Chen", { exact: true });
-    const email = account.getByText(OWNER_EMAIL, { exact: true });
+    const name = account.getByText(REAL_OWNER_NAME, { exact: true });
+    const email = account.getByText(REAL_OWNER_EMAIL, { exact: true });
     await expect(name).toBeVisible();
     await expect(email).toBeVisible();
-    await expect(account.locator('[data-slot="avatar"]')).toHaveText("MC");
+    await expect(account.locator('[data-slot="avatar"]')).toHaveText("OO");
 
     const nameBox = await name.boundingBox();
     const emailBox = await email.boundingBox();
@@ -445,17 +450,63 @@ test.describe("sidebar footer", () => {
     ]);
     expect(sizes[1]).toBeLessThan(sizes[0]);
   });
+
+  test("a demo owner sees the role muted below the name, not the sandbox email", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await startDemo(page, "agency");
+
+    const account = page.getByRole("button", { name: "Account" });
+    const name = account.getByText("Maya Chen", { exact: true });
+    const role = account.getByText("Owner", { exact: true });
+    await expect(name).toBeVisible();
+    await expect(role).toBeVisible();
+    await expect(account).not.toContainText("demo.clientdesk.invalid");
+
+    const nameBox = await name.boundingBox();
+    const roleBox = await role.boundingBox();
+    if (nameBox && roleBox) {
+      expect(roleBox.y).toBeGreaterThanOrEqual(nameBox.y + nameBox.height - 1);
+    }
+  });
+
+  test("a demo client sees their company below the name", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await startDemo(page, "client");
+
+    const account = page.getByRole("button", { name: "Account" });
+    await expect(account).toHaveAccessibleName(
+      /^Account:\s*Priya Nair\s*Client · Acme Bakery$/,
+    );
+    await expect(account).not.toContainText("demo.clientdesk.invalid");
+  });
 });
 
 test.describe("account menu", () => {
   test("the trigger's accessible name contains its visible text (WCAG 2.5.3)", async ({
     page,
   }) => {
-    await login(page, OWNER_EMAIL);
+    await login(page, REAL_OWNER_EMAIL);
 
     const account = page.getByRole("button", { name: "Account" });
     await expect(account).toHaveAccessibleName(
-      /^Account:\s*Maya Chen\s*maya@northwind\.test$/,
+      /^Account:\s*Olivia Owner\s*owner@clientdesk\.test$/,
+    );
+  });
+
+  test("a demo user's trigger name ends with the role, and the menu hides the sandbox email", async ({
+    page,
+  }) => {
+    await startDemo(page, "agency");
+
+    const account = page.getByRole("button", { name: "Account" });
+    await expect(account).toHaveAccessibleName(
+      /^Account:\s*Maya Chen\s*Owner$/,
+    );
+    await account.click();
+    await expect(page.locator('[data-slot="dropdown-menu-label"]')).toHaveText(
+      "Owner",
     );
   });
 
@@ -463,14 +514,14 @@ test.describe("account menu", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await login(page, OWNER_EMAIL);
+    await login(page, REAL_OWNER_EMAIL);
     await page
       .getByRole("button", { name: "Open navigation", exact: true })
       .click();
     await page.getByRole("button", { name: "Account" }).click();
 
     const label = page.locator('[data-slot="dropdown-menu-label"]');
-    await expect(label).toHaveText(OWNER_EMAIL);
+    await expect(label).toHaveText(REAL_OWNER_EMAIL);
     const style = await label.evaluate((element) => {
       const computed = getComputedStyle(element);
       return {
@@ -482,7 +533,7 @@ test.describe("account menu", () => {
     expect(style.textOverflow).not.toBe("ellipsis");
     expect(style.overflowWrap).toBe("anywhere");
     expect(style.clipped).toBe(false);
-    await expect(label).toHaveAttribute("title", OWNER_EMAIL);
+    await expect(label).toHaveAttribute("title", REAL_OWNER_EMAIL);
   });
 });
 
@@ -498,7 +549,7 @@ test.describe("dashboard metrics", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await login(page, OWNER_EMAIL);
+    await startDemo(page, "agency");
 
     const titles = metricTitles(page);
     await expect(titles).toHaveCount(3);
@@ -520,7 +571,7 @@ test.describe("dashboard metrics", () => {
 
   test("show the full labels on desktop", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await login(page, OWNER_EMAIL);
+    await startDemo(page, "agency");
 
     await expect(
       page.getByRole("main").getByText("Active projects", { exact: true }),

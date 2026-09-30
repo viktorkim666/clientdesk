@@ -1,0 +1,53 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 785 >>
+stream
+0.059 0.463 0.431 rg
+56 742 60 6 re f
+BT /F2 26 Tf 56 700 Td 0.122 0.161 0.216 rg
+(Lumen Dental Brand Guidelines) Tj ET
+BT /F1 12 Tf 56 676 Td 0.42 0.45 0.5 rg
+(Prepared by Northwind Studio) Tj ET
+BT /F1 12 Tf 56 630 Td 18 TL 0.122 0.161 0.216 rg
+(Color: deep teal \(#0F766E\) with a warm sand accent \(#E8D5B0\).) Tj
+T* (Both pass contrast checks on the clinic's printed forms.) Tj
+T* () Tj
+T* (Logo: use the rounded wordmark on light backgrounds and the monogram) Tj
+T* (on teal. Keep clear space equal to the height of the letter L.) Tj
+T* () Tj
+T* (Typography: a friendly sans-serif for headings, a neutral one for body) Tj
+T* (text. Body copy is never smaller than 11 pt in print.) Tj
+T* () Tj
+T* (Tone: calm, plain and warm. Say what happens next, not what could go wrong.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000251 00000 n 
+0000001087 00000 n 
+0000001157 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+1232
+%%EOF

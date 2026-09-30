@@ -52,7 +52,7 @@ export default async function BillingPage({
         .select("stripe_customer_id")
         .eq("workspace_id", workspace.id)
         .maybeSingle();
-      if (pendingRow) {
+      if (pendingRow?.stripe_customer_id) {
         try {
           await syncWorkspaceBilling(pendingRow.stripe_customer_id, {
             stripe,

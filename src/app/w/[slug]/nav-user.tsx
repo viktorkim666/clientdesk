@@ -25,10 +25,15 @@ const initialState: AuthActionState = { ok: true };
 export function NavUser({
   email,
   fullName,
+  demoDetail,
 }: {
   email: string;
   fullName: string | null;
+  /** Set inside a demo sandbox: shown where the email would be, because a
+      sandbox user's email is a random address nobody should read. */
+  demoDetail: string | null;
 }) {
+  const secondary = demoDetail ?? email;
   const [state, formAction, isPending] = useActionState(signOut, initialState);
   const signOutFormId = useId();
 
@@ -49,11 +54,11 @@ export function NavUser({
                   the accessible name without replacing it (WCAG 2.5.3). */}
               <span className="sr-only">Account: </span>
               <span className="truncate text-sm font-medium">
-                {fullName ?? email}
+                {fullName ?? secondary}
               </span>
               {fullName ? (
                 <span className="truncate text-xs text-foreground/70">
-                  {email}
+                  {secondary}
                 </span>
               ) : null}
             </span>
@@ -63,9 +68,9 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuLabel
                 className="[overflow-wrap:anywhere]"
-                title={email}
+                title={secondary}
               >
-                {email}
+                {secondary}
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
