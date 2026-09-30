@@ -35,6 +35,8 @@ async function inviteAndAcceptClientUser(
   await ownerPage.getByLabel("Client", { exact: true }).click();
   await ownerPage.getByRole("option", { name: clientName }).click();
   await ownerPage.getByRole("button", { name: "Send invitation" }).click();
+  // Without an email provider the dialog shows the invite link; close it.
+  await ownerPage.getByRole("button", { name: "Done" }).click();
   await expect(ownerPage.getByRole("cell", { name: email })).toBeVisible();
 
   const inviteUrl = await readLastInviteUrlFor(email);

@@ -15,12 +15,21 @@ const FILE_ID = "90000000-0000-4000-8000-00000000000a";
 const UPDATE_ID = "e0000000-0000-4000-8000-00000000000a";
 const COMMENT_ID = "f0000000-0000-4000-8000-00000000000a";
 
-const { createClientMock, revalidatePathMock, sendProjectUpdateEmailMock } =
-  vi.hoisted(() => ({
-    createClientMock: vi.fn(),
-    revalidatePathMock: vi.fn(),
-    sendProjectUpdateEmailMock: vi.fn<EmailSender["sendProjectUpdateEmail"]>(),
-  }));
+const {
+  createClientMock,
+  revalidatePathMock,
+  sendProjectUpdateEmailMock,
+  isDemoWorkspaceMock,
+} = vi.hoisted(() => ({
+  createClientMock: vi.fn(),
+  revalidatePathMock: vi.fn(),
+  sendProjectUpdateEmailMock: vi.fn<EmailSender["sendProjectUpdateEmail"]>(),
+  isDemoWorkspaceMock: vi.fn<() => Promise<boolean>>(),
+}));
+
+vi.mock("@/lib/demo/is-demo-workspace", () => ({
+  isDemoWorkspace: isDemoWorkspaceMock,
+}));
 
 vi.mock("next/cache", () => ({ revalidatePath: revalidatePathMock }));
 
@@ -132,6 +141,7 @@ beforeEach(() => {
   createClientMock.mockReset();
   revalidatePathMock.mockClear();
   sendProjectUpdateEmailMock.mockReset();
+  isDemoWorkspaceMock.mockReset().mockResolvedValue(false);
 });
 
 describe("changeStatus", () => {
@@ -408,6 +418,86 @@ describe("postUpdate", () => {
     });
     expect(revalidatePathMock).toHaveBeenCalledWith(
       `/w/${WORKSPACE_SLUG}/projects/${PROJECT_ID}`,
+    );
+  });
+});
+
+describe("postUpdate in a demo workspace", () => {
+  function demoClient(rpc: () => Promise<{ data: unknown; error: unknown }>) {
+    return buildClient({
+      from: fromByTable({
+        project_updates: { data: { id: "update-1" }, error: null },
+        workspaces: { data: { name: WORKSPACE_NAME }, error: null },
+        projects: { data: { name: PROJECT_NAME }, error: null },
+      }),
+      rpc,
+    });
+  }
+
+  it("posts the update but sends no email, whoever the recipients are", async () => {
+    isDemoWorkspaceMock.mockResolvedValue(true);
+    const rpc = vi.fn(() =>
+      Promise.resolve({ data: ["real-person@example.com"], error: null }),
+    );
+    createClientMock.mockReturnValue(demoClient(rpc));
+
+    const result = await postUpdate(
+      WORKSPACE_ID,
+      WORKSPACE_SLUG,
+      PROJECT_ID,
+      buildFormData({ body: "Kickoff notes." }),
+    );
+
+    expect(result).toEqual({ ok: true });
+    expect(sendProjectUpdateEmailMock).not.toHaveBeenCalled();
+    expect(revalidatePathMock).toHaveBeenCalledWith(
+      `/w/${WORKSPACE_SLUG}/projects/${PROJECT_ID}`,
+    );
+  });
+
+  it("sends no email when the demo check itself fails, and says so", async () => {
+    isDemoWorkspaceMock.mockRejectedValue(new Error("lookup failed"));
+    createClientMock.mockReturnValue(
+      demoClient(() =>
+        Promise.resolve({ data: ["real-person@example.com"], error: null }),
+      ),
+    );
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    const result = await postUpdate(
+      WORKSPACE_ID,
+      WORKSPACE_SLUG,
+      PROJECT_ID,
+      buildFormData({ body: "Kickoff notes." }),
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      warning: "Update posted, but recipients could not be notified.",
+    });
+    expect(sendProjectUpdateEmailMock).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalled();
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("checks the workspace the update was posted to", async () => {
+    createClientMock.mockReturnValue(
+      demoClient(() => Promise.resolve({ data: [], error: null })),
+    );
+
+    await postUpdate(
+      WORKSPACE_ID,
+      WORKSPACE_SLUG,
+      PROJECT_ID,
+      buildFormData({ body: "Kickoff notes." }),
+    );
+
+    expect(isDemoWorkspaceMock).toHaveBeenCalledWith(
+      expect.anything(),
+      WORKSPACE_ID,
     );
   });
 });

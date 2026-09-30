@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { isDemoWorkspace } from "@/lib/demo/is-demo-workspace";
 import { getEmailSender } from "@/lib/email";
 import { env } from "@/lib/env";
 import { projectStatusSchema } from "@/lib/validation/project";
@@ -96,6 +97,23 @@ export async function postUpdate(
   }
 
   revalidatePath(projectPath(workspaceSlug, projectId));
+
+  // A sandbox sends no email at all, whoever the recipients are: its users
+  // have undeliverable addresses, and the demo must never become a way to
+  // mail somebody. `withoutDemoRecipients` filters by domain as well; this
+  // check does not rely on the addresses. A failed lookup also sends
+  // nothing.
+  try {
+    if (await isDemoWorkspace(supabase, workspaceId)) {
+      return { ok: true };
+    }
+  } catch (lookupError) {
+    console.error("postUpdate action: demo check failed", lookupError);
+    return {
+      ok: true,
+      warning: "Update posted, but recipients could not be notified.",
+    };
+  }
 
   const { data: recipients, error: recipientsError } = await supabase.rpc(
     "project_update_recipients",

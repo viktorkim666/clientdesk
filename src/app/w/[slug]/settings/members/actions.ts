@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getEmailSender } from "@/lib/email";
+import { isDemoWorkspace } from "@/lib/demo/is-demo-workspace";
+import { getEmailDelivery, getEmailSender } from "@/lib/email";
 import {
   generateInvitationToken,
   hashInvitationToken,
@@ -11,7 +12,10 @@ import { env } from "@/lib/env";
 import { inviteSchema } from "@/lib/validation/invitation";
 import type { Database } from "@/types/database";
 
-export type MemberActionResult = { ok: true } | { ok: false; error: string };
+// `inviteUrl` is set only when the email was not delivered by a real provider,
+// so the owner can hand the link over themselves.
+export type MemberActionResult =
+  { ok: true; inviteUrl?: string } | { ok: false; error: string };
 
 const INVITATION_TTL_DAYS = 7;
 
@@ -43,6 +47,21 @@ export async function inviteMember(
     return { ok: false, error: "You must be signed in" };
   }
 
+  // Checked here as well as in the UI: the button being disabled stops
+  // nobody who calls the action directly. Sandbox users have undeliverable
+  // addresses, and the demo has no use for real invitations.
+  try {
+    if (await isDemoWorkspace(supabase, workspaceId)) {
+      return {
+        ok: false,
+        error: "Invites are turned off in the demo workspace.",
+      };
+    }
+  } catch (lookupError) {
+    console.error("inviteMember action: demo check failed", lookupError);
+    return { ok: false, error: "Could not send the invitation. Try again." };
+  }
+
   const token = generateInvitationToken();
   const { data: invitation, error: insertError } = await supabase
     .from("invitations")
@@ -64,23 +83,44 @@ export async function inviteMember(
     return { ok: false, error: "You are not allowed to send this invitation" };
   }
 
-  try {
-    await getEmailSender().sendInvitationEmail({
-      to: parsed.data.email,
-      workspaceName,
-      inviteUrl: `${env.NEXT_PUBLIC_SITE_URL}/invite/${token}`,
-    });
-  } catch (sendError) {
-    console.error("inviteMember action: sendInvitationEmail failed", sendError);
-    await supabase.from("invitations").delete().eq("id", invitation.id);
-    return {
-      ok: false,
-      error: "Could not send the invitation email. Try again.",
-    };
+  const inviteUrl = `${env.NEXT_PUBLIC_SITE_URL}/invite/${token}`;
+  const delivery = getEmailDelivery();
+
+  // With no sender at all (production without RESEND_API_KEY) there is
+  // nothing to try: the invitation stays and the owner gets the link.
+  if (delivery !== "none") {
+    try {
+      await getEmailSender().sendInvitationEmail({
+        to: parsed.data.email,
+        workspaceName,
+        inviteUrl,
+      });
+    } catch (sendError) {
+      console.error(
+        "inviteMember action: sendInvitationEmail failed",
+        sendError,
+      );
+      const { error: deleteError } = await supabase
+        .from("invitations")
+        .delete()
+        .eq("id", invitation.id);
+      if (deleteError) {
+        console.error(
+          "inviteMember action: could not delete the invitation",
+          deleteError,
+        );
+      }
+      return {
+        ok: false,
+        error: "Could not send the invitation email. Try again.",
+      };
+    }
   }
 
   revalidatePath(`/w/${workspaceSlug}/settings/members`);
-  return { ok: true };
+  // The console sender only writes to a local file, so it counts as "not
+  // delivered" too: the link is shown whenever no real provider sent it.
+  return delivery === "provider" ? { ok: true } : { ok: true, inviteUrl };
 }
 
 export async function changeMemberRole(

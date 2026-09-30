@@ -77,6 +77,8 @@ test.describe("AI draft update", () => {
     await page.getByLabel("Role", { exact: true }).click();
     await page.getByRole("option", { name: "Member", exact: true }).click();
     await page.getByRole("button", { name: "Send invitation" }).click();
+    // Without an email provider the dialog shows the invite link; close it.
+    await page.getByRole("button", { name: "Done" }).click();
     await expect(page.getByRole("cell", { name: memberEmail })).toBeVisible();
     const memberInviteUrl = await readLastInviteUrlFor(memberEmail);
 
@@ -89,6 +91,8 @@ test.describe("AI draft update", () => {
     await page.getByLabel("Client", { exact: true }).click();
     await page.getByRole("option", { name: clientName }).click();
     await page.getByRole("button", { name: "Send invitation" }).click();
+    // Without an email provider the dialog shows the invite link; close it.
+    await page.getByRole("button", { name: "Done" }).click();
     await expect(page.getByRole("cell", { name: clientEmail })).toBeVisible();
     const clientInviteUrl = await readLastInviteUrlFor(clientEmail);
 

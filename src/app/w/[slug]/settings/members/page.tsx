@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { isCurrentWorkspaceDemo } from "@/lib/demo/current-sandbox";
 import { formatDate, formatExpiry } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace/current";
@@ -27,23 +28,25 @@ export default async function MembersPage({
   const supabase = await createClient();
   const workspace = await getCurrentWorkspace(supabase, slug);
 
-  const { data: members } = await supabase
-    .from("workspace_members")
-    .select("user_id, role, profiles(full_name), clients(name)")
-    .eq("workspace_id", workspace.id);
-
-  const { data: clients } = await supabase
-    .from("clients")
-    .select("id, name")
-    .eq("workspace_id", workspace.id)
-    .order("name", { ascending: true });
-
-  const { data: invitations } = await supabase
-    .from("invitations")
-    .select("id, email, role, expires_at")
-    .eq("workspace_id", workspace.id)
-    .is("accepted_at", null)
-    .order("created_at", { ascending: false });
+  const [{ data: members }, { data: clients }, { data: invitations }, isDemo] =
+    await Promise.all([
+      supabase
+        .from("workspace_members")
+        .select("user_id, role, profiles(full_name), clients(name)")
+        .eq("workspace_id", workspace.id),
+      supabase
+        .from("clients")
+        .select("id, name")
+        .eq("workspace_id", workspace.id)
+        .order("name", { ascending: true }),
+      supabase
+        .from("invitations")
+        .select("id, email, role, expires_at")
+        .eq("workspace_id", workspace.id)
+        .is("accepted_at", null)
+        .order("created_at", { ascending: false }),
+      isCurrentWorkspaceDemo(supabase, workspace.id),
+    ]);
 
   const now = new Date();
 
@@ -68,6 +71,7 @@ export default async function MembersPage({
             workspaceName={workspace.name}
             actingRole={workspace.role}
             clients={clients ?? []}
+            isDemo={isDemo}
           />
         }
       />

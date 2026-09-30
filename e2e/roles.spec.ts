@@ -52,6 +52,8 @@ test.describe("end-to-end role check", () => {
     await page.getByLabel("Client", { exact: true }).click();
     await page.getByRole("option", { name: "Client A Co." }).click();
     await page.getByRole("button", { name: "Send invitation" }).click();
+    // Without an email provider the dialog shows the invite link; close it.
+    await page.getByRole("button", { name: "Done" }).click();
     await expect(page.getByRole("cell", { name: clientEmail })).toBeVisible();
 
     const inviteUrl = await readLastInviteUrlFor(clientEmail);
