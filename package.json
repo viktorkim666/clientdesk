@@ -15,6 +15,7 @@
     "db:types": "supabase gen types typescript --local > src/types/database.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "icons:favicon": "node scripts/generate-favicon.mts",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck",
     "prepare": "husky"
   },
