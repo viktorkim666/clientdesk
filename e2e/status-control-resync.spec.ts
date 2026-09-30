@@ -46,6 +46,8 @@ test.describe("a project's stale status resyncs after an in-place revalidation",
     await page.getByLabel("Role").click();
     await page.getByRole("option", { name: "Owner", exact: true }).click();
     await page.getByRole("button", { name: "Send invitation" }).click();
+    // Without an email provider the dialog shows the invite link; close it.
+    await page.getByRole("button", { name: "Done" }).click();
     await expect(page.getByRole("cell", { name: owner2Email })).toBeVisible();
 
     const inviteUrl = await readLastInviteUrlFor(owner2Email);

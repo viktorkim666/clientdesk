@@ -5,14 +5,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const WORKSPACE_ID = "a0000000-0000-4000-8000-000000000001";
 const WORKSPACE_SLUG = "acme-agency";
 
-const { getCurrentWorkspaceMock, createClientMock } = vi.hoisted(() => ({
-  getCurrentWorkspaceMock: vi.fn(),
-  createClientMock: vi.fn(),
-}));
+const { getCurrentWorkspaceMock, createClientMock, isDemoWorkspaceMock } =
+  vi.hoisted(() => ({
+    getCurrentWorkspaceMock: vi.fn(),
+    createClientMock: vi.fn(),
+    isDemoWorkspaceMock: vi.fn<() => Promise<boolean>>(),
+  }));
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 vi.mock("@/lib/workspace/current", () => ({
   getCurrentWorkspace: getCurrentWorkspaceMock,
+}));
+vi.mock("@/lib/demo/is-demo-workspace", () => ({
+  isDemoWorkspace: isDemoWorkspaceMock,
 }));
 vi.mock("./actions", () => ({
   changeMemberRole: vi.fn(),
@@ -98,9 +103,54 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.useRealTimers();
   getCurrentWorkspaceMock.mockResolvedValue(workspace());
+  isDemoWorkspaceMock.mockResolvedValue(false);
 });
 
 describe("MembersPage", () => {
+  it("asks whether this is a sandbox while the table reads are still open", async () => {
+    const sandboxAsked = Promise.withResolvers<void>();
+    isDemoWorkspaceMock.mockImplementation(() => {
+      sandboxAsked.resolve();
+      return Promise.resolve(false);
+    });
+    // Every table read stays open forever.
+    const never = new Promise<never>(() => undefined);
+    const chain: Record<string, unknown> = { then: never.then.bind(never) };
+    for (const method of ["select", "eq", "is", "order"]) {
+      chain[method] = () => chain;
+    }
+    createClientMock.mockResolvedValue({ from: () => chain });
+
+    void MembersPage({ params: Promise.resolve({ slug: WORKSPACE_SLUG }) });
+
+    // The table reads never resolve here, so a page that awaited the reads
+    // one by one would not have reached the sandbox check.
+    await Promise.race([
+      sandboxAsked.promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("sandbox check not started")), 200),
+      ),
+    ]);
+    expect(isDemoWorkspaceMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables Invite and explains why in a sandbox workspace", async () => {
+    isDemoWorkspaceMock.mockResolvedValue(true);
+    stub([member("u1", "owner", "Ada Lovelace")], []);
+    const html = await render();
+
+    expect(isDemoWorkspaceMock).toHaveBeenCalledWith(
+      expect.anything(),
+      WORKSPACE_ID,
+    );
+    expect(html).toMatch(
+      /<button[^>]*aria-disabled="true"[^>]*>Invite<\/button>/,
+    );
+    expect(text(html)).toContain(
+      "Invites are turned off in the demo workspace.",
+    );
+  });
+
   it("renders the header with a description and a single Invite button", async () => {
     stub([member("u1", "owner", "Ada Lovelace")], []);
     const html = await render();
