@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { env } from "@/lib/env";
+import { SITE_DESCRIPTION } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,9 +16,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // Makes the generated icon and social image URLs absolute.
+  metadataBase: new URL(env.NEXT_PUBLIC_SITE_URL),
   title: { default: "Clientdesk", template: "%s · Clientdesk" },
-  description:
-    "Clientdesk is a client portal where small agencies and freelancers share project status, files and updates with their clients.",
+  description: SITE_DESCRIPTION,
+  openGraph: { siteName: "Clientdesk", type: "website" },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
