@@ -38,6 +38,8 @@ function localSupabaseSecretKey(): string {
 
 export default defineConfig({
   testDir: "./e2e",
+  // Only *.spec.ts files are Playwright tests; *.test.ts files in e2e/support are Vitest unit tests.
+  testMatch: "**/*.spec.ts",
   // Clears the seeded AI-draft workspace's rate-limit rows before the suite
   // runs, so reruns can't exhaust its 50-per-24h cap. See the file itself.
   globalSetup: "./e2e/support/global-setup.ts",
