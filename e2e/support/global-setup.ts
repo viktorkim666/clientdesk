@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { z } from "zod";
+import { parseDbQueryRows } from "./db-query";
 
 const execFileAsync = promisify(execFile);
 
@@ -39,15 +40,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 // The ids end up inside a SQL statement, so an output of any other shape (a
 // changed CLI format, an error object) stops the setup instead of producing
 // a statement from whatever was there.
-const sandboxUsersSchema = z.object({
-  rows: z.array(
-    z.object({
-      owner_user_id: z.string().regex(UUID),
-      member_user_id: z.string().regex(UUID),
-      client_one_user_id: z.string().regex(UUID),
-      client_two_user_id: z.string().regex(UUID),
-    }),
-  ),
+const sandboxUserRowSchema = z.object({
+  owner_user_id: z.string().regex(UUID),
+  member_user_id: z.string().regex(UUID),
+  client_one_user_id: z.string().regex(UUID),
+  client_two_user_id: z.string().regex(UUID),
 });
 
 async function localQuery(statement: string) {
@@ -75,13 +72,8 @@ async function deleteDemoSandboxes() {
   const { stdout } = await localQuery(
     "select owner_user_id, member_user_id, client_one_user_id, client_two_user_id from public.demo_sandboxes",
   );
-  const parsed = sandboxUsersSchema.safeParse(JSON.parse(stdout));
-  if (!parsed.success) {
-    throw new Error(
-      `Unexpected output from "supabase db query -o json": ${parsed.error.message}`,
-    );
-  }
-  const userIds = parsed.data.rows.flatMap((row) => Object.values(row));
+  const rows = parseDbQueryRows(stdout, sandboxUserRowSchema);
+  const userIds = rows.flatMap((row) => Object.values(row));
 
   await localQuery(
     "delete from public.workspaces where id in (select workspace_id from public.demo_sandboxes union select free_workspace_id from public.demo_sandboxes)",

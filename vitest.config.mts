@@ -6,7 +6,7 @@ const dirname = import.meta.dirname;
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "e2e/support/**/*.test.ts"],
     env: {
       NEXT_PUBLIC_SITE_URL: "http://localhost:3000",
       NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:54321",
