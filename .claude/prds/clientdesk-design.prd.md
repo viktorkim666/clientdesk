@@ -54,11 +54,11 @@ We'll know we're right when **a person who has never seen the app can say what i
 
 <!-- Status: pending | in-progress | complete -->
 
-| #   | Milestone          | Outcome                                                                                                          | Status      | Plan                                       |
-| --- | ------------------ | ---------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------ |
-| 1   | Visual foundations | The chosen direction is live in both themes; navigation and page frames work on a phone and on a desktop         | complete    | `.claude/plans/design-foundations.plan.md` |
-| 2   | App screens        | Dashboard, project page, clients, members and billing look finished, with empty and loading states on every list | complete    | `.claude/plans/app-screens.plan.md`        |
-| 3   | Landing page       | A first-time visitor understands the product from the home page and reaches sign up or log in                    | in-progress | `.claude/plans/landing-page.plan.md`       |
+| #   | Milestone          | Outcome                                                                                                          | Status   | Plan                                       |
+| --- | ------------------ | ---------------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------ |
+| 1   | Visual foundations | The chosen direction is live in both themes; navigation and page frames work on a phone and on a desktop         | complete | `.claude/plans/design-foundations.plan.md` |
+| 2   | App screens        | Dashboard, project page, clients, members and billing look finished, with empty and loading states on every list | complete | `.claude/plans/app-screens.plan.md`        |
+| 3   | Landing page       | A first-time visitor understands the product from the home page and reaches sign up or log in                    | complete | `.claude/plans/landing-page.plan.md`       |
 
 ## Open Questions
 

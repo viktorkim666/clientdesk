@@ -160,7 +160,7 @@ git rebase main --exec 'rm -rf .next/dev && pnpm lint && pnpm typecheck && pnpm 
 - [x] Lighthouse accessibility ≥ 95 on `/` (recorded: 100 on desktop and mobile)
 - [x] Reduced motion and unsupported browsers show the full static page
 - [x] Visual QA pass in both themes at four widths, findings fixed
-- [ ] Validation passes locally and in CI
+- [x] Validation passes locally and in CI (CI `test` job green on PR viktorkim666/clientdesk#15)
 - [x] Patterns mirrored, not reinvented
 
 ## Review outcome
