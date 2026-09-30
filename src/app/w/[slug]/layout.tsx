@@ -18,16 +18,31 @@ export default async function WorkspaceLayout({
   const supabase = await createClient();
   const workspace = await getCurrentWorkspace(supabase, slug);
 
-  const { data: memberships } = await supabase
-    .from("workspace_members")
-    .select("workspaces(name, slug)")
-    .eq("user_id", workspace.userId);
+  // Independent reads, so they run together. Own profile row: profiles_select
+  // lets a user read their own profile.
+  const [membershipsResult, profileResult] = await Promise.all([
+    supabase
+      .from("workspace_members")
+      .select("workspaces(name, slug)")
+      .eq("user_id", workspace.userId),
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", workspace.userId)
+      .maybeSingle(),
+  ]);
 
-  const workspaces = (memberships ?? [])
+  // Same as getCurrentWorkspace: a failed read reaches error.tsx instead of
+  // rendering a shell with no workspaces or no name.
+  if (membershipsResult.error) throw membershipsResult.error;
+  if (profileResult.error) throw profileResult.error;
+
+  const workspaces = (membershipsResult.data ?? [])
     .map((membership) => membership.workspaces)
     .filter((candidate): candidate is { name: string; slug: string } =>
       Boolean(candidate),
     );
+  const profile = profileResult.data;
 
   return (
     <SidebarProvider>
@@ -42,6 +57,7 @@ export default async function WorkspaceLayout({
         role={workspace.role}
         workspaces={workspaces}
         userEmail={workspace.userEmail}
+        userFullName={profile?.full_name?.trim() || null}
       />
       <SidebarInset id="main-content" tabIndex={-1}>
         <header className="flex items-center gap-2 border-b p-4 md:hidden">

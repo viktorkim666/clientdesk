@@ -173,7 +173,7 @@ export default async function WorkspaceDashboardPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title={workspace.name}
+        title="Overview"
         description={
           isStaff
             ? "Projects, updates and files across your workspace."
@@ -188,7 +188,14 @@ export default async function WorkspaceDashboardPage({
             : "grid grid-cols-2 gap-2 sm:gap-4"
         }
       >
-        <Metric icon={FolderKanban} label="Active projects">
+        <Metric
+          icon={FolderKanban}
+          label={
+            <>
+              Active<span className="max-sm:sr-only"> projects</span>
+            </>
+          }
+        >
           {activeCount}
           {totalCount > 0 ? (
             <span className="text-sm font-normal text-muted-foreground">
@@ -201,7 +208,14 @@ export default async function WorkspaceDashboardPage({
             {clientsCountResult?.count ?? 0}
           </Metric>
         ) : null}
-        <Metric icon={MessageSquare} label="Updates this week">
+        <Metric
+          icon={MessageSquare}
+          label={
+            <>
+              Updates<span className="max-sm:sr-only"> this week</span>
+            </>
+          }
+        >
           {weekCountResult.count ?? 0}
         </Metric>
       </div>
@@ -306,7 +320,10 @@ function Metric({
   children,
 }: {
   icon: LucideIcon;
-  label: string;
+  // A long label hides its tail below sm with `max-sm:sr-only`, so three
+  // cards read as one line each while the full text stays one text run for
+  // screen readers.
+  label: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -314,7 +331,7 @@ function Metric({
       <CardHeader className="px-3 sm:px-(--card-spacing)">
         <CardTitle className="flex flex-col items-start gap-1 text-xs leading-tight font-medium text-muted-foreground sm:flex-row sm:items-center sm:gap-2 sm:text-sm">
           <Icon className="size-4" aria-hidden="true" />
-          {label}
+          <span>{label}</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="px-3 text-xl font-semibold tabular-nums sm:px-(--card-spacing) sm:text-2xl">

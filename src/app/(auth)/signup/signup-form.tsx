@@ -84,7 +84,10 @@ export function SignUpForm({
       ) : null}
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
-        <Link href="/login" className="underline underline-offset-4">
+        <Link
+          href="/login"
+          className="inline-flex items-center underline underline-offset-4 max-sm:min-h-11"
+        >
           Sign in
         </Link>
       </p>

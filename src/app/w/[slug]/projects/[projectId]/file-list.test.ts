@@ -67,13 +67,13 @@ describe("FileList", () => {
   it("hides the secondary columns below sm", () => {
     const html = render([file({})]);
     expect(html).toMatch(
-      /<th[^>]*class="[^"]*hidden sm:table-cell[^"]*">Uploaded by<\/th>/,
+      /<th[^>]*class="[^"]*hidden sm:table-cell[^"]*"[^>]*>Uploaded by<\/th>/,
     );
     expect(html).toMatch(
-      /<th[^>]*class="[^"]*hidden sm:table-cell[^"]*">Size<\/th>/,
+      /<th[^>]*class="[^"]*hidden sm:table-cell[^"]*"[^>]*>Size<\/th>/,
     );
     expect(html).toMatch(
-      /<th[^>]*class="[^"]*hidden sm:table-cell[^"]*">Uploaded<\/th>/,
+      /<th[^>]*class="[^"]*hidden sm:table-cell[^"]*"[^>]*>Uploaded<\/th>/,
     );
   });
 
@@ -109,10 +109,56 @@ describe("FileList", () => {
 
   it("repeats uploader, size and date as a muted line under the name for small screens", () => {
     const html = render([file({})]);
+    const line =
+      html.match(/<span[^>]*\bsm:hidden\b[^>]*>(.*?)<\/span><\/td>/)?.[1] ?? "";
 
-    expect(html).toMatch(
-      /report\.pdf<\/span><\/div><span[^>]*\bsm:hidden\b[^>]*>Ada Lovelace · 2\.0 KB · Mar 3, 2026<\/span>/,
+    expect(line.replace(/<[^>]+>/g, "")).toBe(
+      "Ada Lovelace · 2.0 KB · Mar 3, 2026",
     );
+  });
+
+  it("keeps the size and the date unbreakable in the small-screen line", () => {
+    const html = render([file({})]);
+
+    for (const chunk of ["2\\.0 KB", "Mar 3, 2026"]) {
+      expect(html).toMatch(
+        new RegExp(
+          `<span[^>]*data-slot="file-meta-chunk"[^>]*\\bwhitespace-nowrap\\b[^>]*>${chunk}</span>|<span[^>]*\\bwhitespace-nowrap\\b[^>]*data-slot="file-meta-chunk"[^>]*>${chunk}</span>`,
+        ),
+      );
+    }
+  });
+
+  it("gives the file name its own line: wrapping at any character, with the full name as a title", () => {
+    const html = render([file({ name: "a-very-long-file-name.pdf" })]);
+    const name =
+      html.match(/<span[^>]*>a-very-long-file-name\.pdf<\/span>/)?.[0] ?? "";
+
+    expect(name).toContain('data-slot="file-name"');
+    expect(name).toContain('title="a-very-long-file-name.pdf"');
+    expect(name).toContain("[overflow-wrap:anywhere]");
+    expect(name).not.toContain("truncate");
+  });
+
+  it("marks up an explicit table structure, because rows turn into flex boxes below sm", () => {
+    const html = render([file({})]);
+
+    expect(html).toMatch(/<thead[^>]*role="rowgroup"/);
+    expect(html).toMatch(/<tbody[^>]*role="rowgroup"/);
+    expect(html.match(/<tr[^>]*role="row"/g)).toHaveLength(2);
+    expect(html.match(/<th[^>]*role="columnheader"/g)).toHaveLength(5);
+    // Name, uploader, size, date and actions.
+    expect(html.match(/<td[^>]*role="cell"/g)).toHaveLength(5);
+  });
+
+  it("styles Download as an outline button and Delete as a destructive one", () => {
+    const html = render([file({})]);
+    const download = html.match(/<button[^>]*>Download<\/button>/)?.[0] ?? "";
+    const remove = html.match(/<button[^>]*>Delete<\/button>/)?.[0] ?? "";
+
+    expect(download).toContain("border-border");
+    expect(download).not.toContain("bg-destructive/10");
+    expect(remove).toContain("bg-destructive/10");
   });
 
   it("shows an empty state instead of a table with no files", () => {

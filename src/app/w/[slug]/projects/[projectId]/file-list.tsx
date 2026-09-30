@@ -118,17 +118,40 @@ function FileRow({
   const Icon = KIND_ICONS[fileKind(file.mimeType)];
 
   return (
-    <TableRow>
-      <TableCell className="whitespace-normal">
+    // Below sm each row is a wrapping flex box: the name cell takes the first
+    // line, the actions the next one. display:flex drops the native table
+    // semantics in Safari/VoiceOver, hence the explicit roles on rows and cells.
+    <TableRow
+      role="row"
+      className="max-sm:flex max-sm:flex-wrap max-sm:items-center"
+    >
+      <TableCell
+        role="cell"
+        className="min-w-0 whitespace-normal max-sm:w-full"
+      >
         <div className="flex items-center gap-2">
           <Icon
             aria-hidden="true"
             className="size-4 shrink-0 text-muted-foreground"
           />
-          <span className="min-w-0 font-medium break-all">{file.name}</span>
+          <span
+            data-slot="file-name"
+            title={file.name}
+            className="min-w-0 font-medium [overflow-wrap:anywhere]"
+          >
+            {file.name}
+          </span>
         </div>
         <span className="block pl-6 text-xs font-normal text-muted-foreground sm:hidden">
-          {`${file.uploaderName} · ${formatSize(file.sizeBytes)} · ${formatDate(file.createdAt)}`}
+          {file.uploaderName}
+          {" · "}
+          <span data-slot="file-meta-chunk" className="whitespace-nowrap">
+            {formatSize(file.sizeBytes)}
+          </span>
+          {" · "}
+          <span data-slot="file-meta-chunk" className="whitespace-nowrap">
+            {formatDate(file.createdAt)}
+          </span>
         </span>
         {rowError ? (
           <p role="alert" className="text-xs text-destructive">
@@ -136,20 +159,22 @@ function FileRow({
           </p>
         ) : null}
       </TableCell>
-      <TableCell className="hidden sm:table-cell">
+      <TableCell role="cell" className="hidden sm:table-cell">
         {file.uploaderName}
       </TableCell>
-      <TableCell className="hidden sm:table-cell">
+      <TableCell role="cell" className="hidden sm:table-cell">
         {formatSize(file.sizeBytes)}
       </TableCell>
-      <TableCell className="hidden sm:table-cell">
+      <TableCell role="cell" className="hidden sm:table-cell">
         {formatDate(file.createdAt)}
       </TableCell>
-      <TableCell>
-        <div className="flex justify-end gap-2">
+      {/* pl-8 = cell padding (0.5rem) + icon (1rem) + gap (0.5rem): the buttons
+          start under the name text, not under its icon. */}
+      <TableCell role="cell" className="max-sm:w-full max-sm:pt-0 max-sm:pl-8">
+        <div className="flex gap-2 sm:justify-end">
           <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="sm"
             disabled={downloadPending}
             onClick={handleDownload}
@@ -165,7 +190,7 @@ function FileRow({
               trigger={
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="destructive"
                   size="sm"
                   disabled={deletePending}
                   aria-label={`${deletePending ? "Deleting" : "Delete"} ${file.name}`}
@@ -208,16 +233,24 @@ export function FileList({
 
   return (
     <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead className="hidden sm:table-cell">Uploaded by</TableHead>
-          <TableHead className="hidden sm:table-cell">Size</TableHead>
-          <TableHead className="hidden sm:table-cell">Uploaded</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
+      <TableHeader className="max-sm:sr-only" role="rowgroup">
+        <TableRow role="row">
+          <TableHead role="columnheader">Name</TableHead>
+          <TableHead role="columnheader" className="hidden sm:table-cell">
+            Uploaded by
+          </TableHead>
+          <TableHead role="columnheader" className="hidden sm:table-cell">
+            Size
+          </TableHead>
+          <TableHead role="columnheader" className="hidden sm:table-cell">
+            Uploaded
+          </TableHead>
+          <TableHead role="columnheader" className="text-right">
+            Actions
+          </TableHead>
         </TableRow>
       </TableHeader>
-      <TableBody>
+      <TableBody role="rowgroup">
         {files.map((file) => (
           <FileRow
             key={file.id}

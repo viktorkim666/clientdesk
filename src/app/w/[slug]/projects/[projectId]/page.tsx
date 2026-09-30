@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { StatusBadge } from "@/components/status-badge";
-import { UserAvatar } from "@/components/user-avatar";
+import { CompanyAvatar } from "@/components/company-avatar";
 import { resolveAuthorName } from "@/lib/activity";
 import { formatDate, formatRelative } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
@@ -180,7 +180,7 @@ export default async function ProjectPage({
         <div className="min-w-0">
           <Link
             href={`/w/${workspace.slug}/projects`}
-            className="text-sm text-muted-foreground hover:underline"
+            className="inline-flex min-h-7 items-center gap-1 text-sm text-muted-foreground hover:underline max-sm:min-h-11"
           >
             <span aria-hidden="true">←</span> Projects
           </Link>
@@ -190,7 +190,7 @@ export default async function ProjectPage({
           <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
             {project.clients ? (
               <span className="flex items-center gap-1.5">
-                <UserAvatar name={project.clients.name} size="sm" />
+                <CompanyAvatar size="sm" />
                 {project.clients.name}
               </span>
             ) : (

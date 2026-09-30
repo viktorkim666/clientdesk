@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cn } from "cn";
 import { OutsideWorkspaceHeader } from "@/components/outside-workspace-header";
+import { PageBackdrop } from "@/components/page-backdrop";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -22,7 +23,8 @@ export default async function InvitePage({
   const { data: claims } = await supabase.auth.getClaims();
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-6 p-4">
+    <div className="relative isolate flex min-h-svh flex-col items-center justify-center gap-6 p-4">
+      <PageBackdrop />
       <OutsideWorkspaceHeader />
       <main className="w-full max-w-sm">
         <Card>

@@ -1,15 +1,17 @@
 import type { Locator, Page } from "@playwright/test";
 
-// WCAG contrast of `fg` over an opaque `bg`. `fg` may carry alpha. A canvas
+// WCAG contrast of `fg` over `bg`. `fg` may carry alpha. `bg` is one opaque
+// color, or several layers painted in order (base first) so a translucent
+// tint can be measured over what sits behind it. A canvas
 // resolves any CSS color the browser understands, including oklch and
 // color-mix results that getComputedStyle returns unchanged.
 export async function contrastRatio(
   page: Page,
   fg: string,
-  bg: string,
+  bg: string | string[],
 ): Promise<number> {
   return page.evaluate(
-    ([fgCss, bgCss]) => {
+    ({ fgCss, bgLayers }) => {
       const context = document.createElement("canvas").getContext("2d");
       if (!context) {
         throw new Error("2d canvas context is unavailable");
@@ -32,12 +34,12 @@ export async function contrastRatio(
         const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
         return luminance(r, g, b);
       };
-      const back = pixel([bgCss]);
-      const front = pixel([bgCss, fgCss]);
+      const back = pixel(bgLayers);
+      const front = pixel([...bgLayers, fgCss]);
       const [light, dark] = back > front ? [back, front] : [front, back];
       return (light + 0.05) / (dark + 0.05);
     },
-    [fg, bg],
+    { fgCss: fg, bgLayers: Array.isArray(bg) ? bg : [bg] },
   );
 }
 
@@ -51,5 +53,21 @@ export async function backgroundBehind(locator: Locator): Promise<string> {
       }
     }
     return getComputedStyle(document.body).backgroundColor;
+  });
+}
+
+// Every background painted from the page down to the element itself, root
+// first, so translucent layers (a row hover, a button tint) can be composited
+// in order. Feed the result to `contrastRatio` as `bg`.
+export async function backgroundStack(locator: Locator): Promise<string[]> {
+  return locator.evaluate((element) => {
+    const layers: string[] = [];
+    for (let node: Element | null = element; node; node = node.parentElement) {
+      const color = getComputedStyle(node).backgroundColor;
+      if (color !== "rgba(0, 0, 0, 0)" && color !== "transparent") {
+        layers.unshift(color);
+      }
+    }
+    return layers;
   });
 }

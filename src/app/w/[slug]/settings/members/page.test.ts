@@ -160,7 +160,7 @@ describe("MembersPage", () => {
     const html = await render();
 
     expect(html).toMatch(
-      /<button[^>]*aria-label="Remove Grace Hopper"[^>]*>[^]*?Remove<\/span><\/button>/,
+      /<button[^>]*aria-label="Remove Grace Hopper"[^>]*>Remove<\/button>/,
     );
   });
 
