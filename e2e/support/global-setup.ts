@@ -59,15 +59,37 @@ async function localQuery(statement: string) {
   ]);
 }
 
-// Every "Try as ..." click in e2e/demo-sandbox.spec.ts creates a sandbox with
-// four users. Left alone they would pile up in the local database and, after
-// 40 in an hour, trip the global cap in create_demo_sandbox. This removes all
-// of them, the way the daily cron does in production: the workspaces first
-// (deleting a user first would trip protect_last_owner), then the users.
-// The registry rows go last: deleting the workspaces leaves them behind (with
-// the user ids), and they must not count toward the caps of later runs.
-// The local database is throwaway; a sandbox someone made by hand goes too.
-// Storage blobs stay: Storage does not allow deleting objects through SQL.
+// Sandbox budget. Every "Try as ..." click creates a sandbox with four users,
+// and create_demo_sandbox refuses the 41st sandbox in an hour. A full run
+// stays well under that, with room for CI's 2 retries, because specs that only
+// read a sandbox share one per file (startSharedDemo in e2e/support/demo.ts)
+// and only the specs that change it start their own (startDemo). Sandboxes
+// per run, by file:
+//
+//   demo-limits.spec.ts          2  (AI + upload group, then the 5-upload test)
+//   demo-sandbox.spec.ts         5  (shared agency, shared client, own
+//                                    isolation pair, own client-removed)
+//   demo-data.spec.ts            2  (shared agency, shared client)
+//   visual-polish.spec.ts        2  (shared agency, shared client)
+//   destructive-contrast.spec.ts 1
+//   demo-billing.spec.ts         1
+//   demo-invites.spec.ts         1
+//                               --
+//                               14
+//
+// A new spec that starts a sandbox per test should share one instead, unless
+// it changes the sandbox. Keep this table in step with the specs.
+//
+// Left alone the sandboxes would also pile up in the local database. This
+// removes all of them, the way the daily cron does in production: the
+// workspaces first (deleting a user first would trip protect_last_owner),
+// then the users. The registry rows go last: deleting the workspaces leaves
+// them behind (with the user ids), and they must not count toward the caps of
+// later runs. The two usage ledgers go with them: the AI one feeds the daily
+// AI budget across all sandboxes, so a run would otherwise count against the
+// next. The local database is throwaway; a sandbox someone made by hand goes
+// too. Storage blobs stay: Storage does not allow deleting objects through
+// SQL.
 async function deleteDemoSandboxes() {
   const { stdout } = await localQuery(
     "select owner_user_id, member_user_id, client_one_user_id, client_two_user_id from public.demo_sandboxes",
@@ -83,6 +105,8 @@ async function deleteDemoSandboxes() {
     await localQuery(`delete from auth.users where id in (${list})`);
   }
   await localQuery("delete from public.demo_sandboxes");
+  await localQuery("delete from public.demo_ai_usage");
+  await localQuery("delete from public.demo_upload_usage");
 }
 
 /**

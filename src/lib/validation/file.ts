@@ -35,6 +35,112 @@ export const fileMetadataSchema = z.object({
 
 export type FileMetadataInput = z.infer<typeof fileMetadataSchema>;
 
+/**
+ * Demo sandbox limits. The database enforces them in
+ * `private.enforce_demo_upload_limits`
+ * (supabase/migrations/20261001110000_demo_upload_limits.sql); these copies
+ * let the uploader refuse a file before it uploads, with a clearer message.
+ */
+export const DEMO_MAX_NEW_FILES = 5;
+export const DEMO_MAX_FILE_BYTES = 2 * 1024 * 1024;
+export const DEMO_ALLOWED_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+  "application/pdf",
+] as const;
+
+const DEMO_MAX_FILE_MB = DEMO_MAX_FILE_BYTES / (1024 * 1024);
+
+export const DEMO_UPLOAD_HINT = `Demo: up to ${DEMO_MAX_NEW_FILES} files, ${DEMO_MAX_FILE_MB} MB each, images or PDF`;
+
+/** Shown when the sandbox has used all its uploads. Deleting a file does not
+ * free a slot: the database counts every upload for the life of the sandbox. */
+export const DEMO_COUNT_MESSAGE = `Demo limit reached: ${DEMO_MAX_NEW_FILES} uploads. Uploads are turned off for the rest of this demo.`;
+
+const DEMO_TYPE_MESSAGE =
+  "In this demo, files must be an image (PNG, JPEG, WebP or GIF) or a PDF.";
+const DEMO_SIZE_MESSAGE = `This file is over ${DEMO_MAX_FILE_MB} MB, the limit in this demo. Choose a smaller one.`;
+
+const isDemoMimeType = (mimeType: string) =>
+  (DEMO_ALLOWED_MIME_TYPES as readonly string[]).includes(mimeType);
+
+/**
+ * The first demo rule a file breaks, as a message for the uploader, or
+ * `null` when it passes. `uploadedSoFar` is how many files the visitor has
+ * already added to the sandbox.
+ */
+export function validateDemoUpload(
+  file: { size: number; mimeType: string },
+  uploadedSoFar: number,
+): string | null {
+  if (!isDemoMimeType(file.mimeType)) return DEMO_TYPE_MESSAGE;
+  if (file.size > DEMO_MAX_FILE_BYTES) return DEMO_SIZE_MESSAGE;
+  if (uploadedSoFar >= DEMO_MAX_NEW_FILES) return DEMO_COUNT_MESSAGE;
+  return null;
+}
+
+/** Errcode the file trigger raises (CD005); the message tells which rule. */
+export const DEMO_UPLOAD_ERROR_CODE = "CD005";
+
+export const DEMO_UPLOAD_TYPE_LIMIT_CODE = "demo_upload_type_limit";
+export const DEMO_UPLOAD_SIZE_LIMIT_CODE = "demo_upload_size_limit";
+export const DEMO_UPLOAD_COUNT_LIMIT_CODE = "demo_upload_count_limit";
+
+/**
+ * Maps the message of a CD005 error from the database to the same text
+ * `validateDemoUpload` gives, or `null` for any other message.
+ */
+export function demoUploadErrorMessage(databaseMessage: string): string | null {
+  switch (databaseMessage) {
+    case DEMO_UPLOAD_TYPE_LIMIT_CODE:
+      return DEMO_TYPE_MESSAGE;
+    case DEMO_UPLOAD_SIZE_LIMIT_CODE:
+      return DEMO_SIZE_MESSAGE;
+    case DEMO_UPLOAD_COUNT_LIMIT_CODE:
+      return DEMO_COUNT_MESSAGE;
+    default:
+      return null;
+  }
+}
+
+/** The fields of a Storage error (`StorageError` in `@supabase/storage-js`)
+ * that tell a policy refusal from other failures. */
+type StorageErrorLike = {
+  message: string;
+  status?: number;
+  statusCode?: string;
+};
+
+/**
+ * True when Storage refused the upload because a row-level security policy
+ * said no: HTTP 403, or the Postgres message about row-level security.
+ */
+export function isStoragePolicyRefusal(error: StorageErrorLike): boolean {
+  return (
+    error.status === 403 ||
+    error.statusCode === "403" ||
+    /row-level security/i.test(error.message)
+  );
+}
+
+const GENERIC_UPLOAD_ERROR = "Could not upload the file";
+
+/**
+ * The message for a failed Storage upload. In a sandbox the storage policy
+ * also caps the object count and refuses with a generic message, so a policy
+ * refusal there is explained as the count limit; any other error stays generic.
+ */
+export function storageUploadErrorMessage(
+  error: StorageErrorLike,
+  isDemo: boolean,
+): string {
+  return isDemo && isStoragePolicyRefusal(error)
+    ? `${GENERIC_UPLOAD_ERROR}. ${DEMO_COUNT_MESSAGE}`
+    : GENERIC_UPLOAD_ERROR;
+}
+
 const DEFAULT_FILE_NAME = "file";
 const MAX_FILE_NAME_LENGTH = 100;
 

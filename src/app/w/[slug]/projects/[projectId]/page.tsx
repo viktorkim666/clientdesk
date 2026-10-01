@@ -56,7 +56,7 @@ export default async function ProjectPage({
   // for them - a client's page load doesn't pay for a query it can't use.
   // None of these queries depend on each other's results - billing and
   // members need only workspace.id, updates and files need only
-  // project.id - so all four run concurrently instead of one after another.
+  // project.id - so all five run concurrently instead of one after another.
   const billingQuery = isStaff
     ? supabase
         .from("workspace_billing")
@@ -90,12 +90,35 @@ export default async function ProjectPage({
     .order("created_at", { ascending: false })
     .limit(100);
 
+  // How many of a sandbox's 5 uploads are used, or null outside a sandbox.
+  // The function reads the ledger the database counts against (RLS on
+  // project_files would show a client only the files they can read, and a
+  // deleted file would look like a free slot), so the hint matches the
+  // limit the trigger enforces. The generated type says `number`, but the
+  // function also returns null (a non-member, or a workspace outside a
+  // sandbox) and the generator cannot express that; the uploader's prop type
+  // `number | null` is the honest one.
+  const demoUploadsQuery = supabase.rpc("demo_uploads_used", {
+    p_workspace_id: workspace.id,
+  });
+
   const [
     billingResult,
     { data: members },
     { data: updateRows },
     { data: fileRows },
-  ] = await Promise.all([billingQuery, membersQuery, updatesQuery, filesQuery]);
+    { data: demoUploadsUsed, error: demoUploadsError },
+  ] = await Promise.all([
+    billingQuery,
+    membersQuery,
+    updatesQuery,
+    filesQuery,
+    demoUploadsQuery,
+  ]);
+
+  if (demoUploadsError) {
+    throw demoUploadsError;
+  }
 
   let plan: ReturnType<typeof planFromStatus> = "free";
   let aiConfigured = false;
@@ -252,6 +275,7 @@ export default async function ProjectPage({
             workspaceId={workspace.id}
             workspaceSlug={workspace.slug}
             projectId={project.id}
+            demoUploadsUsed={demoUploadsUsed}
           />
           <FileList
             workspaceId={workspace.id}

@@ -739,6 +739,77 @@ describe("registerFile", () => {
   });
 });
 
+describe("registerFile in a demo sandbox", () => {
+  const storagePath = buildStoragePath({
+    workspaceId: WORKSPACE_ID,
+    projectId: PROJECT_ID,
+    fileId: FILE_ID,
+    name: VALID_METADATA.name,
+  });
+
+  it.each([
+    ["demo_upload_count_limit", /5 uploads/],
+    ["demo_upload_size_limit", /over 2 MB/],
+    ["demo_upload_type_limit", /must be an image/],
+  ])(
+    "turns the database's CD005 %s into its own message",
+    async (message, pattern) => {
+      createClientMock.mockReturnValue(
+        buildClient({
+          from: () => chainResult({ error: { code: "CD005", message } }),
+          storage: {
+            list: () =>
+              Promise.resolve({
+                data: [{ name: VALID_METADATA.name }],
+                error: null,
+              }),
+          },
+        }),
+      );
+
+      const result = await registerFile(
+        WORKSPACE_ID,
+        WORKSPACE_SLUG,
+        PROJECT_ID,
+        storagePath,
+        VALID_METADATA,
+      );
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error).toMatch(pattern);
+      }
+      expect(revalidatePathMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it("keeps the generic message for any other insert error", async () => {
+    createClientMock.mockReturnValue(
+      buildClient({
+        from: () =>
+          chainResult({ error: { code: "23505", message: "duplicate" } }),
+        storage: {
+          list: () =>
+            Promise.resolve({
+              data: [{ name: VALID_METADATA.name }],
+              error: null,
+            }),
+        },
+      }),
+    );
+
+    const result = await registerFile(
+      WORKSPACE_ID,
+      WORKSPACE_SLUG,
+      PROJECT_ID,
+      storagePath,
+      VALID_METADATA,
+    );
+
+    expect(result).toEqual({ ok: false, error: "Could not save the file" });
+  });
+});
+
 describe("deleteFile", () => {
   const STORAGE_PATH = buildStoragePath({
     workspaceId: WORKSPACE_ID,

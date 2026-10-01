@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { login } from "./support/auth";
-import { startDemo } from "./support/demo";
+import { startSharedDemo } from "./support/demo";
 
 // The Northwind Studio demo template from supabase/demo/template.sql. Every
 // visitor gets a private copy through the landing page's demo buttons, and it
@@ -26,7 +26,7 @@ test.describe("demo workspace", () => {
   test("the demo owner lands on a filled Northwind Studio dashboard", async ({
     page,
   }) => {
-    const base = await startDemo(page, "agency");
+    const base = await startSharedDemo(page, "agency");
 
     await expect(
       page.getByRole("button", { name: "Northwind Studio", exact: true }),
@@ -64,7 +64,7 @@ test.describe("demo workspace", () => {
   });
 
   test("a demo client sees only their own projects", async ({ page }) => {
-    const base = await startDemo(page, "client");
+    const base = await startSharedDemo(page, "client");
 
     await page.goto(`${base}/projects`);
     const rows = page.getByRole("table").getByRole("row");
@@ -89,7 +89,7 @@ test.describe("demo workspace", () => {
   }) => {
     // A live sandbox, started by a different visitor.
     const visitor = await browser.newContext();
-    const demoBase = await startDemo(await visitor.newPage(), "agency");
+    const demoBase = await startSharedDemo(await visitor.newPage(), "agency");
     await visitor.close();
 
     await login(page, FIXTURE_OWNER_EMAIL);
