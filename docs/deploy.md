@@ -61,7 +61,7 @@ The SQL file is safe to run again: it deletes its own rows before inserting them
 
 1. Authentication, URL Configuration: Site URL is `https://<host>`.
 2. Same page, Redirect URLs: add `https://<host>/auth/callback`.
-3. Authentication, Email provider: turn "Confirm email" off. The built-in mailer sends only a few messages per hour, and the project has no mail domain yet.
+3. Authentication, Sign In / Providers: turn "Confirm email" off. The switch sits above the list of providers, not inside the Email provider, and has its own "Save changes" button. The built-in mailer sends only a few messages per hour, and the project has no mail domain yet.
 
 With confirmation off, anyone can sign up with an address they do not own. That lets someone take an address before its owner does, and an invite link that leaks can be accepted by whoever signs up with the invited address. This is acceptable for a demo. Turn confirmation back on once the project has a mail domain or custom SMTP, and consider CAPTCHA protection for sign-ups in the Supabase Auth settings.
 
