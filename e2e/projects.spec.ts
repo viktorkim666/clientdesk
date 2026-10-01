@@ -4,6 +4,7 @@ import {
   readLastInviteUrlFor,
   readLastProjectUpdateEmailFor,
 } from "./support/emails";
+import { REPLY_BUTTON_NAME } from "./support/workspace";
 
 const SAMPLE_PDF_PATH = path.join(
   process.cwd(),
@@ -214,6 +215,7 @@ test.describe("end-to-end project flow", () => {
     const downloadBody = Buffer.concat(downloadChunks);
     expect(downloadBody.subarray(0, 5).toString("ascii")).toBe("%PDF-");
 
+    await clientA.page.getByRole("button", { name: REPLY_BUTTON_NAME }).click();
     await clientA.page
       .getByPlaceholder("Write a comment...")
       .fill("Thanks, looks great!");

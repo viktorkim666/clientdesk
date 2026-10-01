@@ -5,6 +5,7 @@ import {
   createClientViaDialog,
   createProjectAndOpen,
   signUpOwnerWithEmptyWorkspace,
+  REPLY_BUTTON_NAME,
 } from "./support/workspace";
 
 const SAMPLE_PDF_PATH = path.join(
@@ -15,7 +16,7 @@ const SAMPLE_PDF_PATH = path.join(
 );
 
 test.describe("project page interactions", () => {
-  test("deleting a comment asks first, then moves focus to that update's comment form", async ({
+  test("deleting a comment asks first, then moves focus to that update's Reply button", async ({
     page,
   }) => {
     await buildFilledWorkspace(page, "delete-comment", test.info().workerIndex);
@@ -53,11 +54,13 @@ test.describe("project page interactions", () => {
     await expect(body).toBeVisible();
     await expect(deleteButton).toBeFocused();
 
-    // Confirming removes it and hands focus to the update's comment form.
+    // Confirming removes it and hands focus to the update's Reply button.
     await deleteButton.click();
     await dialog.getByRole("button", { name: "Delete", exact: true }).click();
     await expect(body).toHaveCount(0);
-    await expect(page.getByLabel("Write a comment")).toBeFocused();
+    await expect(
+      page.getByRole("button", { name: REPLY_BUTTON_NAME }),
+    ).toBeFocused();
   });
 
   test("a failed comment delete shows an alert and returns focus to the delete button", async ({

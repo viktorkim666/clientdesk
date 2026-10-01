@@ -7,6 +7,8 @@ import {
   createClientViaDialog,
   createProjectAndOpen,
   signUpOwnerWithEmptyWorkspace,
+  REPLY_BUTTON_NAME,
+  REPLY_TEXTAREA_LABEL,
 } from "./support/workspace";
 
 // axe-core is a transitive dependency of @axe-core/playwright rather than a
@@ -289,6 +291,14 @@ for (const colorScheme of ["light", "dark"] as const) {
       );
       await checkAccessibility(page, `filled project page (${colorScheme})`);
 
+      await page.getByRole("button", { name: REPLY_BUTTON_NAME }).click();
+      await expect(page.getByLabel(REPLY_TEXTAREA_LABEL)).toBeVisible();
+      await checkAccessibility(
+        page,
+        `project page with the reply form open (${colorScheme})`,
+      );
+      await page.getByRole("button", { name: "Cancel" }).click();
+
       await page.getByRole("button", { name: /^Delete comment by / }).click();
       await expect(page.getByRole("alertdialog")).toBeVisible();
       await checkAccessibility(
@@ -348,6 +358,18 @@ for (const colorScheme of ["light", "dark"] as const) {
         page.getByRole("main").getByRole("heading", { level: 1 }),
       ).toBeVisible();
       await checkAccessibility(page, `/ (${colorScheme})`);
+    });
+
+    test(`the mobile menu has no WCAG 2 A/AA violations when open in ${colorScheme}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 375, height: 800 });
+      await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+
+      await page.goto("/");
+      await page.getByRole("button", { name: "Menu", exact: true }).click();
+      await expect(page.getByRole("dialog")).toBeVisible();
+      await checkAccessibility(page, `mobile menu (${colorScheme})`);
     });
   });
 }

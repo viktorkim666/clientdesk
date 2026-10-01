@@ -94,13 +94,16 @@ test.describe("demo workspace", () => {
 
     await login(page, FIXTURE_OWNER_EMAIL);
 
-    await page
-      .getByRole("button", { name: "Acme Agency", exact: true })
-      .click();
-    await expect(page.getByRole("menuitem")).not.toHaveCount(0);
+    // One workspace, so the sidebar names it without a switcher, and the
+    // sandbox does not show up anywhere in the shell.
+    const sidebar = page.locator('[data-slot="sidebar"]');
     await expect(
-      page.getByRole("menuitem", { name: "Northwind Studio" }),
+      sidebar.getByText("Acme Agency", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Acme Agency", exact: true }),
     ).toHaveCount(0);
+    await expect(page.getByText("Northwind Studio")).toHaveCount(0);
 
     await page.goto(demoBase);
     await expect(
