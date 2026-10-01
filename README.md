@@ -38,6 +38,14 @@ A visitor can start 3 sandboxes per hour, counted by a salted hash of their IP a
 
 No email leaves a sandbox: the app drops every recipient on `demo.clientdesk.invalid`, and invites are turned off there with a note that says so. Outside a sandbox, when no email provider is configured, the invite dialog shows the invite link to copy.
 
+### Limits in a sandbox
+
+AI drafts: a sandbox gets 3 drafts total, and all sandboxes together share a rolling 24-hour budget of 150 drafts. Past either limit, the visitor sees a message that explains the limit and a saved sample draft to edit and publish.
+
+Uploads: a sandbox registers at most 5 uploaded files over its life (deleting a file frees no slot), 2 MB each, images (PNG, JPEG, WebP, GIF) or PDF. The type limit trusts the Content-Type that Storage recorded; the bytes are not sniffed. A visitor can still upload objects straight to Storage without registering them and delete them again; those are not counted in the 5, and are bounded only by a cap on objects per workspace at any moment, 10 MiB each, and the 24-hour life of the sandbox. After the sandbox expires all of its files are deleted.
+
+Billing: the sandbox's Pro workspace is pinned to Pro and links to a Free workspace called "Northwind Labs" where a visitor can run a real Stripe test-mode checkout with the test card 4242 4242 4242 4242.
+
 ### Environment variables
 
 Sandboxes need `SUPABASE_SECRET_KEY` for the admin API. Production also needs `DEMO_VISITOR_SALT`, a random string for the visitor hash; without it the demo buttons answer that the live demo isn't available. Locally the salt can stay empty. `CRON_SECRET` is the token the cleanup route expects; without it the route refuses every request.
@@ -110,7 +118,7 @@ The previews are built from the app's own components on sample data, so they fol
 
 Staff on a Pro workspace can click "Draft update" on a project page. The server collects the project's activity from the last 7 days (updates, comments and file names), asks Claude for a short client update and streams the text into the update form. The staff member edits it and posts it like any other update. Free workspaces see an upgrade prompt instead.
 
-Drafts use `claude-haiku-4-5-20251001` with `max_tokens` 800. `claim_ai_draft` in Postgres allows 10 drafts per user per hour and 50 per workspace per 24 hours. The input is capped at 50 items or 12,000 characters, whichever comes first, to keep the cost of one request bounded.
+Drafts use `claude-haiku-4-5-20251001` with `max_tokens` 800. `claim_ai_draft` in Postgres allows 10 drafts per user per hour and 50 per workspace per 24 hours. The input is capped at 50 items or 12,000 characters, whichever comes first, to keep the cost of one request bounded. Sandboxes are capped at 3 drafts each and share a global daily budget.
 
 `ANTHROPIC_API_KEY` is optional. Locally and in CI, an empty key switches to a fake generator that streams a template draft. In production, an empty key disables the button with "AI drafting is not configured".
 
@@ -186,3 +194,9 @@ pnpm build
 - destructive contrast: `e2e/destructive-contrast.spec.ts` checks that destructive buttons keep 4.5:1 text contrast at rest and on hover, in light and dark
 - pgTAP demo sandbox: `supabase/tests/21_demo_template_test.sql` tests the template: counts, passwordless users with identities, and the pinned Pro plan
 - pgTAP sandbox limits: `supabase/tests/22_demo_sandbox_test.sql` tests clone counts, re-anchored timestamps, sandbox isolation, grants, the three caps and expiry
+- pgTAP demo hardening: `supabase/tests/23_demo_hardening_test.sql` tests that demo users cannot create workspaces, invite others, or change their email or phone
+- pgTAP demo AI limits: `supabase/tests/24_demo_ai_limits_test.sql` tests the per-sandbox and global daily budget limits on AI drafts, and the ledger that counts them
+- pgTAP demo upload limits: `supabase/tests/25_demo_upload_limits_test.sql` tests file count, size and type limits, the ledger that survives file deletion, and the storage policy cap
+- pgTAP demo usage cleanup: `supabase/tests/26_demo_usage_cleanup_test.sql` tests the cleanup functions, the demo usage ledgers and the helper RPCs
+- demo limits: `e2e/demo-limits.spec.ts` tests the AI draft limit with a sample, upload limits with PNG, oversized, and type refusal, and the storage cap
+- demo billing: `e2e/demo-billing.spec.ts` tests that the Pro sandbox notes itself and links to its Free workspace for test checkout
