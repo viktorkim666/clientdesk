@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
 import { deleteComment } from "./actions";
-import { commentBodyId } from "./comment-form";
+import { commentReplyId } from "./comment-form";
 import { ConfirmDeleteDialog } from "./confirm-delete-dialog";
 
 export type CommentRowData = {
@@ -57,10 +57,10 @@ export function CommentRow({
           projectId,
           comment.id,
         );
-        // This row is about to disappear, so focus goes to the comment form
+        // This row is about to disappear, so focus goes to the Reply button
         // of the same update instead of falling back to the page body.
         if (result.ok) {
-          document.getElementById(commentBodyId(updateId))?.focus();
+          document.getElementById(commentReplyId(updateId))?.focus();
         } else {
           setError(result.error);
           restoreFocus.current = true;

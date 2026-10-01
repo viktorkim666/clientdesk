@@ -77,6 +77,7 @@ export function UpdatesList({
                 workspaceSlug={workspaceSlug}
                 projectId={projectId}
                 updateId={update.id}
+                authorName={update.authorName}
               />
             </div>
           </div>
