@@ -71,7 +71,11 @@ export function Features() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="reveal max-w-2xl">
           <p className="text-sm font-medium text-primary">What you get</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h2
+            id="features-heading"
+            tabIndex={-1}
+            className="mt-3 text-3xl font-semibold tracking-tight outline-none sm:text-4xl"
+          >
             Everything a client relationship needs
           </h2>
           <p className="mt-4 max-w-2xl text-muted-foreground">

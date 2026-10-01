@@ -19,7 +19,11 @@ export function HowItWorks() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="reveal max-w-2xl">
           <p className="text-sm font-medium text-primary">How it works</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+          <h2
+            id="how-it-works-heading"
+            tabIndex={-1}
+            className="mt-3 text-3xl font-semibold tracking-tight outline-none sm:text-4xl"
+          >
             Up and running in three steps
           </h2>
           <p className="mt-4 max-w-2xl text-muted-foreground">
