@@ -6,7 +6,7 @@
 
 ## Summary
 
-A visitor on the live site clicks "Try as agency" or "Try as client" and lands in a private copy of Northwind Studio, signed in, with no password shown anywhere. The copy can use real AI drafts, uploads and a Stripe test checkout within hard limits, and it is deleted after 24 hours. The plan also closes the deferred UI nits, deploys to Vercel and Supabase Cloud on free tiers, and publishes a README and a captioned walkthrough video recorded by a script.
+A visitor on the live site clicks "Try as agency" or "Try as client" and lands in a private copy of Northwind Studio, signed in, with no password shown anywhere. The copy can use real AI drafts, uploads and a Stripe test checkout within hard limits, and it is deleted after 24 hours. The plan also closes the deferred UI nits, deploys to Vercel and Supabase Cloud on free tiers, and publishes a README.
 
 ## Decisions
 
@@ -20,7 +20,7 @@ The owner made these on 2026-09-30, before planning:
 - **Uploads.** Allowed in the sandbox with hard limits: 5 new files, 2 MB each, images and PDF only. They are deleted with the sandbox.
 - **Hosting.** Vercel (Hobby) and Supabase Cloud (free). The owner creates the accounts and enters every key; this plan ships a step-by-step guide.
 - **Domain.** `clientdesk.vercel.app`, or the closest free name.
-- **Video.** A Playwright script drives the live product with on-screen captions and no voice, and ffmpeg turns the recording into an MP4. The script stays in the repo.
+- **Video.** Dropped by the owner on 2026-10-01: the live demo shows the product, so the README links to it and carries two screenshots.
 - **UI nits before deploy.** A collapsed "Reply" for comments, a landing mobile menu, a label for the comment delete button, and no workspace switcher for a client with one workspace.
 
 Technical decisions this plan adds (open to change at Gate 1):
@@ -47,7 +47,7 @@ Decided by the owner at Gate 1 (2026-09-30):
 | B   | `feat/demo-limits`  | AI budget and sample, upload limits, billing note and Free workspace       |
 | C   | `fix/ui-nits`       | The four deferred UI nits                                                  |
 | D   | `feat/deploy`       | Vercel config, preview `metadataBase`, deploy guide, live smoke test       |
-| E   | `docs/readme-video` | Video script, MP4, README rewrite                                          |
+| E   | `docs/readme`       | README rewrite, two screenshots, plan and PRD closed                       |
 
 Each PR goes through `orch-add-feature` (C through `orch-fix-defect` or `orch-change-feature`, whichever fits each nit), its own Gate 2 and green CI before the next one starts. The plan file and the ticked acceptance box in `brand-and-polish.plan.md` are the first commit of PR A.
 
@@ -94,8 +94,7 @@ Each PR goes through `orch-add-feature` (C through `orch-fix-defect` or `orch-ch
 | `vercel.json`                                                                        | CREATE (PR D)  | Daily cron for `/api/cron/cleanup-demo`                                                                          |
 | `src/app/layout.tsx`, `src/lib/env.ts`, `env.server.ts`, `.env.example`              | UPDATE         | Preview `metadataBase`; `CRON_SECRET`, `DEMO_VISITOR_SALT`                                                       |
 | `docs/deploy.md`                                                                     | CREATE (PR D)  | Step-by-step for the owner: Supabase Cloud, Vercel, Stripe webhook, env vars, template upload                    |
-| `scripts/video/record.ts`, `scripts/video/README.md`                                 | CREATE (PR E)  | Captioned walkthrough recording and ffmpeg conversion                                                            |
-| `README.md`                                                                          | UPDATE         | Live demo link, video, deploy notes, updated demo section                                                        |
+| `README.md`                                                                          | UPDATE         | Live demo link, screenshots, deploy notes, updated demo section                                                  |
 | `playwright.config.ts`, `e2e/support/*`                                              | UPDATE         | e2e gets the local secret key so the demo buttons work; Stripe keys stay empty                                   |
 | `e2e/demo-sandbox.spec.ts`, `demo-limits.spec.ts`                                    | CREATE         | Both buttons, role switch, isolation, limits                                                                     |
 | `e2e/demo-data.spec.ts`, `visual-polish.spec.ts`, `destructive-contrast.spec.ts`     | UPDATE         | Enter Northwind through the demo button instead of `password123`                                                 |
@@ -175,16 +174,11 @@ Each PR goes through `orch-add-feature` (C through `orch-fix-defect` or `orch-ch
 - **Action**: `docs/deploy.md`: create the Supabase project, `supabase link` and `supabase db push`, run the template SQL and blob script, set auth settings, create the Vercel project from GitHub, enter env vars, add the Stripe webhook for the production URL, check the cron. The owner does every step that involves an account or a key. I give the commands and check the result.
 - **Validate**: live smoke test: landing loads, both demo buttons work, a real AI draft, an upload, a Stripe test checkout on the Free workspace, the cron endpoint answers 401 without the secret. Lighthouse on the landing.
 
-### PR E: video and README
+### PR E: README
 
-#### Task E1: Walkthrough video
+#### Task E1: README
 
-- **Action**: `scripts/video/record.ts` drives the live site at 1920x1080 through a scripted story: landing, "Try as agency", dashboard, a project, an AI draft, publish, switch to client, comment. Captions are injected into the page as a fixed overlay. ffmpeg converts the WebM to an H.264 MP4 of about two minutes. The output folder is ignored by git.
-- **Validate**: the owner watches the MP4 and approves it.
-
-#### Task E2: README
-
-- **Action**: Live demo link at the top, the video, a screenshot, the stack, architecture notes (RLS, sandbox, limits), local setup, deploy link, tests. Humanizer on all of it.
+- **Action**: Live demo link at the top, two screenshots from the live site, the stack, architecture notes (RLS, sandbox, limits), local setup, deploy link, tests. Humanizer on all of it.
 - **Validate**: owner review; links checked.
 
 ## Validation
@@ -197,7 +191,7 @@ supabase db reset && pnpm db:test
 pnpm test:e2e
 ```
 
-Plus the live smoke test in D2 and the video review in E1.
+Plus the live smoke test in D2.
 
 ## Risks
 
@@ -216,12 +210,12 @@ Plus the live smoke test in D2 and the video review in E1.
 
 ## Acceptance
 
-- [ ] A visitor tries both roles in one click on the live site, with no password visible anywhere
-- [ ] Two sandboxes never see each other's data (pgTAP and e2e)
-- [ ] AI, upload and sandbox limits hold, with honest messages
+- [x] A visitor tries both roles in one click on the live site, with no password visible anywhere
+- [x] Two sandboxes never see each other's data (pgTAP and e2e)
+- [x] AI, upload and sandbox limits hold, with honest messages
 - [ ] Expired sandboxes, their users, blobs and Stripe customers are deleted by the cron
-- [ ] Deferred UI nits closed and checked in both themes at 1440 and 375
-- [ ] Live on Vercel and Supabase Cloud; the deploy guide works from a clean start
-- [ ] README and the walkthrough video published
-- [ ] Validation passes locally and in CI for every PR
-- [ ] Patterns mirrored, not reinvented
+- [x] Deferred UI nits closed and checked in both themes at 1440 and 375
+- [x] Live on Vercel and Supabase Cloud; the deploy guide works from a clean start
+- [x] README published
+- [x] Validation passes locally and in CI for every PR
+- [x] Patterns mirrored, not reinvented

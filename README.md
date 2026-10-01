@@ -1,8 +1,49 @@
 # Clientdesk
 
-A client portal for small agencies: workspaces, roles, per-client project visibility, and billing.
+Clientdesk is a client portal for small agencies and freelancers. The agency posts project updates and files, and each client sees only their own projects and can comment on them.
 
-## Setup
+## Live demo
+
+https://clientdesk-app.vercel.app
+
+On the landing page, "Try as agency" and "Try as client" each open a private copy of a sample agency, signed in, with no password. A banner at the top switches between the two roles. The copy expires after 24 hours and a daily cleanup deletes it.
+
+To see billing, open the billing page and follow the link to the Free workspace "Northwind Labs". Upgrade there runs a Stripe test checkout: use the card `4242 4242 4242 4242`, any future expiry and any CVC.
+
+![The agency owner's dashboard: active projects, clients, updates this week, a project list and recent activity](docs/screenshots/agency-dashboard.png)
+
+![A project as the client sees it: updates from the agency with the client's comments under them](docs/screenshots/client-project.png)
+
+## What it does
+
+- Workspaces with an owner, members and clients. Staff manage clients and projects; a client sees only the projects of their own company.
+- Projects with updates, comments and file uploads.
+- AI update drafts: on a Pro workspace, staff click "Draft update" and Claude writes a client update from the last 7 days of activity. The text streams into the form and is edited before posting.
+- Billing through Stripe Checkout and the Customer Portal. Free allows 2 clients; Pro removes the limit and unlocks AI drafts.
+- Invites by email, or by a link to copy when no email provider is configured.
+- Light and dark themes.
+- A private demo sandbox for every visitor.
+
+## Stack
+
+- Next.js 16, React 19, TypeScript, Tailwind CSS 4
+- Supabase: Postgres with row level security, Auth and Storage
+- Stripe: Checkout, Customer Portal and webhooks, in test mode
+- Anthropic API with `claude-haiku-4-5-20251001`
+- Vitest, pgTAP and Playwright
+- Vercel and Supabase Cloud
+
+## How it is built
+
+- Access rules live in Postgres. Every read goes through row level security, so a client only sees their own projects and the activity on them. pgTAP tests cover the policies.
+- Limits are enforced in the database: the Free plan's 2 clients, AI draft claims per user and per workspace, and the caps on demo sandboxes, their drafts and their uploads.
+- A demo click creates four users through the Supabase admin API, clones the template workspace in one SQL function and signs the visitor in on the server with a one-time magic-link token. A daily cron deletes expired sandboxes with their users, files and Stripe test customers.
+- Stripe is the source of truth for plan state. The webhook, the post-checkout redirect and the owner's Resync button all re-read the subscription from Stripe.
+- Stripe, the Anthropic key and the email provider are optional. Without one, its feature says it is not configured, and CI runs without any of them.
+
+The sections below go into each part.
+
+## Run it locally
 
 Prerequisites: Node 24, pnpm 12, Docker (for the local Supabase stack).
 
@@ -14,7 +55,7 @@ cp .env.example .env.local # NEXT_PUBLIC_SITE_URL defaults to localhost:3000; fi
 pnpm dev                   # http://localhost:3000
 ```
 
-## Demo workspace (local)
+## Demo sandboxes
 
 `supabase db reset` loads the Northwind Studio template from `supabase/demo/template.sql`: 5 clients and 10 projects on the Pro plan, with updates, comments and files. Nobody signs in to the template itself. "Try as agency" and "Try as client" on the landing page copy it into a private sandbox with fresh users and sign you in without a password. A sandbox lasts 24 hours.
 
@@ -104,16 +145,6 @@ To end a test subscription immediately:
 stripe subscriptions cancel <sub_id> --confirm
 ```
 
-## Dashboard, empty and loading states
-
-The workspace dashboard shows active projects, clients and updates from the last 7 days, the five newest projects and a feed of recent updates, comments and file uploads. Every read goes through RLS, so a client only sees their own projects and the activity on them. Lists without data show an empty state that says what goes there and links to the next step (for example, "Add a client first" on Projects). Each route under a workspace has a loading skeleton that matches its layout.
-
-## Landing page
-
-The home page explains the product and leads to sign up or log in. It has a sticky header with a skip link, a hero with a product preview, four feature rows (roles and access, files and conversation, AI update drafts, billing), a three-step "How it works", a closing call to action and a footer. Signed-in visitors are still redirected to their workspace.
-
-The previews are built from the app's own components on sample data, so they follow the theme and need no screenshots. They are decorative: each frame has `aria-hidden="true"` and `inert`, so it adds no links or tab stops. Sections fade in on scroll with a CSS-only `animation-timeline: view()`. Browsers without support and visitors who prefer reduced motion get the static page.
-
 ## AI update draft
 
 Staff on a Pro workspace can click "Draft update" on a project page. The server collects the project's activity from the last 7 days (updates, comments and file names), asks Claude for a short client update and streams the text into the update form. The staff member edits it and posts it like any other update. Free workspaces see an upgrade prompt instead.
@@ -141,6 +172,16 @@ ANTHROPIC_API_KEY=sk-...
 The seed creates a Pro workspace for this feature: `ai-draft-pro-agency`, owner `ai-draft-owner@clientdesk.test`, password `password123`. Sign in, open a project with recent activity and click "Draft update" in the Updates card.
 
 Each run of `e2e/ai-draft.spec.ts` counts against that workspace's limit of 50 drafts per 24 hours, but Playwright's global setup clears that workspace's `ai_draft_requests` rows before the suite runs, so reruns can't exhaust the limit.
+
+## Dashboard, empty and loading states
+
+The workspace dashboard shows active projects, clients and updates from the last 7 days, the five newest projects and a feed of recent updates, comments and file uploads. Every read goes through RLS, so a client only sees their own projects and the activity on them. Lists without data show an empty state that says what goes there and links to the next step (for example, "Add a client first" on Projects). Each route under a workspace has a loading skeleton that matches its layout.
+
+## Landing page
+
+The home page explains the product and leads to sign up or log in. It has a sticky header with a skip link, a hero with a product preview, four feature rows (roles and access, files and conversation, AI update drafts, billing), a three-step "How it works", a closing call to action and a footer. Signed-in visitors are still redirected to their workspace.
+
+The previews are built from the app's own components on sample data, so they follow the theme and need no screenshots. They are decorative: each frame has `aria-hidden="true"` and `inert`, so it adds no links or tab stops. Sections fade in on scroll with a CSS-only `animation-timeline: view()`. Browsers without support and visitors who prefer reduced motion get the static page.
 
 ## Theming
 
@@ -200,3 +241,7 @@ pnpm build
 - pgTAP demo usage cleanup: `supabase/tests/26_demo_usage_cleanup_test.sql` tests the cleanup functions, the demo usage ledgers and the helper RPCs
 - demo limits: `e2e/demo-limits.spec.ts` tests the AI draft limit with a sample, upload limits with PNG, oversized, and type refusal, and the storage cap
 - demo billing: `e2e/demo-billing.spec.ts` tests that the Pro sandbox notes itself and links to its Free workspace for test checkout
+
+## Deploy
+
+The live site runs on Vercel (Hobby) and Supabase Cloud (free plan). [docs/deploy.md](docs/deploy.md) goes through the setup step by step: the Supabase project, migrations, the demo template, auth settings, the Stripe webhook, environment variables, the cron and a smoke test.
