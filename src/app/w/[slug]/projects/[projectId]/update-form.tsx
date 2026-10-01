@@ -7,12 +7,53 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  demoLimitMessage,
+  SAMPLE_DRAFT,
+  type DemoLimitReason,
+} from "@/lib/ai/demo-limit";
 import type { Plan } from "@/lib/billing/plan";
 import { draftOutcomeStatusMessage, streamDraft } from "./draft-client";
 import { postUpdate, type PostUpdateResult } from "./actions";
 
 const initialState: PostUpdateResult = { ok: true };
 const DRAFT_HINT_ID = "draft-update-hint";
+const DEMO_LIMIT_ID = "draft-update-demo-limit";
+
+/** Says why the editor holds a sample draft. A polite status, not an alert:
+ * it is information, and the visitor has not made a mistake. */
+export function DemoLimitNotice({
+  reason,
+  id,
+}: {
+  reason: DemoLimitReason;
+  id: string;
+}) {
+  return (
+    <p
+      id={id}
+      role="status"
+      className="flex flex-wrap items-center gap-2 rounded-md bg-muted px-3 py-2 text-sm text-foreground"
+    >
+      <Badge variant="outline" className="bg-background">
+        Sample draft
+      </Badge>
+      <span>{demoLimitMessage(reason)}</span>
+    </p>
+  );
+}
+
+/** A note after a post that went through with a caveat. */
+export function PostWarning({ message }: { message: string }) {
+  return (
+    <p
+      role="status"
+      className="rounded-md bg-warning px-3 py-2 text-sm text-warning-foreground"
+    >
+      {message}
+    </p>
+  );
+}
 
 export function UpdateForm({
   workspaceId,
@@ -34,7 +75,11 @@ export function UpdateForm({
   // drafting ends and kept on screen (unlike the transient "Drafting..."
   // line) until the user types, posts, or starts another draft.
   const [draftStatus, setDraftStatus] = useState<string | null>(null);
+  // Set when the demo's AI draft limit was hit: the editor then holds the
+  // saved sample draft and this line says why.
+  const [demoLimit, setDemoLimit] = useState<DemoLimitReason | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [state, formAction, pending] = useActionState(
     async (_prev: PostUpdateResult, formData: FormData) => {
@@ -47,6 +92,9 @@ export function UpdateForm({
       );
       if (result.ok) {
         setBody("");
+        // The sample is gone, so the limit note and the Draft button's
+        // explanation go with it.
+        setDemoLimit(null);
       }
       return result;
     },
@@ -61,7 +109,14 @@ export function UpdateForm({
     };
   }, []);
 
+  // The editor now holds the sample; move focus there so keyboard and
+  // screen reader users land on the text they can edit.
+  useEffect(() => {
+    if (demoLimit) textareaRef.current?.focus();
+  }, [demoLimit]);
+
   async function handleDraft() {
+    if (!canDraft) return;
     setDraftError(null);
     setDraftStatus(null);
     setBody("");
@@ -81,6 +136,10 @@ export function UpdateForm({
     if (outcome.status === "error") {
       setDraftError(outcome.message);
     }
+    if (outcome.status === "demo_limit") {
+      setBody(SAMPLE_DRAFT);
+      setDemoLimit(outcome.reason);
+    }
     setDraftStatus(draftOutcomeStatusMessage(outcome));
   }
 
@@ -89,7 +148,10 @@ export function UpdateForm({
   }
 
   const alertMessage = draftError ?? (!state.ok ? state.error : null);
-  const canDraft = plan === "pro" && aiConfigured;
+  // Another click would only replace the sample (and any edits to it) with
+  // the same sample, so the button waits until the update is posted.
+  const limited = demoLimit !== null;
+  const canDraft = plan === "pro" && aiConfigured && !limited;
 
   return (
     <form action={formAction} className="space-y-2">
@@ -97,6 +159,7 @@ export function UpdateForm({
         Post an update for the client
       </Label>
       <Textarea
+        ref={textareaRef}
         id="update-body"
         name="body"
         value={body}
@@ -123,7 +186,10 @@ export function UpdateForm({
           {alertMessage}
         </p>
       ) : null}
-      {!drafting && !alertMessage && draftStatus ? (
+      {demoLimit ? (
+        <DemoLimitNotice reason={demoLimit} id={DEMO_LIMIT_ID} />
+      ) : null}
+      {!drafting && !alertMessage && !demoLimit && draftStatus ? (
         <p
           role="status"
           aria-live="polite"
@@ -133,9 +199,7 @@ export function UpdateForm({
         </p>
       ) : null}
       {state.ok && state.warning ? (
-        <p role="status" className="text-sm text-amber-600">
-          {state.warning}
-        </p>
+        <PostWarning message={state.warning} />
       ) : null}
       <div className="flex flex-wrap items-center gap-2">
         <Button type="submit" size="sm" disabled={pending || drafting}>
@@ -156,10 +220,14 @@ export function UpdateForm({
               type="button"
               size="sm"
               variant="outline"
-              disabled={!canDraft || pending}
+              disabled={(!canDraft && !limited) || pending}
+              aria-disabled={limited || undefined}
+              className="aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:transition-none"
               onClick={() => void handleDraft()}
               title="Replaces the current text with an AI-drafted update."
-              aria-describedby={DRAFT_HINT_ID}
+              aria-describedby={
+                limited ? `${DRAFT_HINT_ID} ${DEMO_LIMIT_ID}` : DRAFT_HINT_ID
+              }
             >
               <Sparkles /> Draft update
             </Button>

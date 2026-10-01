@@ -4,6 +4,12 @@
 // environment without React or a DOM (this repo has no jsdom setup - see
 // `vitest.config.mts`); the form itself is covered by `e2e/ai-draft.spec.ts`.
 
+import {
+  DEMO_LIMIT_ERROR,
+  toDemoReason,
+  type DemoLimitReason,
+} from "@/lib/ai/demo-limit";
+
 const GENERIC_DRAFT_ERROR = "Could not draft the update";
 
 /** Structurally a subset of the real `Response` (and of the `ReadableStream`
@@ -23,31 +29,47 @@ export type DraftFetch = (
   init: { method: "POST"; signal: AbortSignal },
 ) => Promise<DraftResponse>;
 
+/** Reads the route's `{ error }` string, or `null` for an empty or
+ * unparseable body. `reason` rides along on the demo limit only. */
+async function readErrorBody(response: {
+  json: () => Promise<unknown>;
+}): Promise<{ error: string | null; reason: unknown }> {
+  try {
+    const body = (await response.json()) as {
+      error?: unknown;
+      reason?: unknown;
+    };
+    return {
+      error:
+        typeof body.error === "string" && body.error.length > 0
+          ? body.error
+          : null,
+      reason: body.reason,
+    };
+  } catch {
+    return { error: null, reason: undefined };
+  }
+}
+
 /** Maps the route's `{ error }` JSON body to a message for the alert line;
  * falls back to a generic message for an empty or unparseable body. */
 export async function readDraftError(response: {
   json: () => Promise<unknown>;
 }): Promise<string> {
-  try {
-    const body = (await response.json()) as { error?: unknown };
-    return typeof body.error === "string" && body.error.length > 0
-      ? body.error
-      : GENERIC_DRAFT_ERROR;
-  } catch {
-    return GENERIC_DRAFT_ERROR;
-  }
+  return (await readErrorBody(response)).error ?? GENERIC_DRAFT_ERROR;
 }
 
 export type StreamDraftOutcome =
   | { status: "done" }
   | { status: "aborted" }
+  | { status: "demo_limit"; reason: DemoLimitReason }
   | { status: "error"; message: string };
 
 /**
  * Maps a finished `streamDraft` outcome to the persistent status line the
- * form shows after drafting - `null` for `"error"`, which keeps using the
- * alert line (`draftError`) instead, since that failure already has its
- * own message to show.
+ * form shows after drafting - `null` for `"error"` and `"demo_limit"`, which
+ * use alert lines of their own instead, since those already have a message
+ * to show.
  */
 export function draftOutcomeStatusMessage(
   outcome: StreamDraftOutcome,
@@ -58,6 +80,7 @@ export function draftOutcomeStatusMessage(
     case "aborted":
       return "Draft stopped.";
     case "error":
+    case "demo_limit":
       return null;
   }
 }
@@ -93,7 +116,14 @@ export async function streamDraft({
   }
 
   if (!response.ok) {
-    return { status: "error", message: await readDraftError(response) };
+    const { error, reason } = await readErrorBody(response);
+    if (error === DEMO_LIMIT_ERROR) {
+      return {
+        status: "demo_limit",
+        reason: toDemoReason(reason),
+      };
+    }
+    return { status: "error", message: error ?? GENERIC_DRAFT_ERROR };
   }
 
   const reader = response.body?.getReader();

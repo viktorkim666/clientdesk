@@ -6,6 +6,7 @@ import {
   toActivitySupabaseClient,
 } from "@/lib/ai/activity";
 import { buildDraftPrompt } from "@/lib/ai/prompt";
+import { DEMO_LIMIT_ERROR, type DemoLimitReason } from "@/lib/ai/demo-limit";
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -15,6 +16,11 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 // in `src/app/w/[slug]/clients/actions.ts`).
 const PLAN_REQUIRED_ERROR_CODE = "CD002";
 const RATE_LIMITED_ERROR_CODE = "CD003";
+// A demo sandbox is out of AI drafts. The message tells which limit: the
+// sandbox's own 3 ("ai_demo_limit") or the daily budget of all demos
+// ("ai_demo_budget"), see `20261001100000_demo_ai_limits.sql`.
+const DEMO_LIMIT_ERROR_CODE = "CD004";
+const DEMO_BUDGET_MESSAGE = "ai_demo_budget";
 
 const projectIdSchema = z.uuid();
 
@@ -62,6 +68,16 @@ export async function POST(
     }
     if (claimError.code === RATE_LIMITED_ERROR_CODE) {
       return jsonError(429, "Too many AI drafts right now. Try again later.");
+    }
+    if (claimError.code === DEMO_LIMIT_ERROR_CODE) {
+      // A flag instead of display text, so the draft form can tell this
+      // apart from the normal rate limit above and offer a sample draft.
+      const reason: DemoLimitReason =
+        claimError.message === DEMO_BUDGET_MESSAGE ? "budget" : "sandbox";
+      return Response.json(
+        { error: DEMO_LIMIT_ERROR, reason },
+        { status: 429 },
+      );
     }
     // Anything else - the caller isn't staff, or the project doesn't
     // exist - is refused as 404, the same way the project page itself
