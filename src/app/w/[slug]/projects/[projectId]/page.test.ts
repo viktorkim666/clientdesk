@@ -122,10 +122,14 @@ async function render() {
 }
 
 function text(html: string) {
-  return html
-    .replace(/<!-- -->/g, "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ");
+  return (
+    html
+      .replace(/<!-- -->/g, "")
+      .replace(/<[^>]+>/g, " ")
+      // Collapses whitespace but keeps non-breaking spaces, which the upload
+      // hint uses on purpose.
+      .replace(/[^\S\u00a0]+/g, " ")
+  );
 }
 
 beforeEach(() => {
@@ -326,7 +330,7 @@ describe("ProjectPage", () => {
     const html = await render();
 
     expect(text(html)).toContain(
-      "Demo: up to 5 files, 2 MB each, images or PDF",
+      "Demo: up to 5\u00a0files, 2\u00a0MB each, images or PDF",
     );
     expect(selects.rpcCalls).toEqual([
       { fn: "demo_uploads_used", args: { p_workspace_id: WORKSPACE_ID } },

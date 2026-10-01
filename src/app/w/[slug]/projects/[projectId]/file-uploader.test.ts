@@ -94,7 +94,7 @@ describe("FileUploader", () => {
       expect(hintId).toBeTruthy();
       expect(html).toMatch(
         new RegExp(
-          `id="${hintId}"[^>]*>Demo: up to 5 files, 2 MB each, images or PDF<`,
+          `id="${hintId}"[^>]*>Demo: up to 5\u00a0files, 2\u00a0MB each, images or PDF<`,
         ),
       );
       expect(html).not.toContain("10 MB");

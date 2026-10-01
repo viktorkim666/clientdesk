@@ -154,9 +154,9 @@ describe("demo upload limits", () => {
     ]);
   });
 
-  it("states the limits in the drop zone hint", () => {
+  it("states the limits in the drop zone hint, keeping each number with its unit", () => {
     expect(DEMO_UPLOAD_HINT).toBe(
-      "Demo: up to 5 files, 2 MB each, images or PDF",
+      "Demo: up to 5\u00a0files, 2\u00a0MB each, images or PDF",
     );
   });
 
