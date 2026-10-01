@@ -21,6 +21,20 @@ export function WorkspaceSwitcher({
     (workspace) => workspace.slug === current,
   );
 
+  // Nothing to switch to: show the name, not a control that opens a menu
+  // with a single item. The dropdown offers no other action today.
+  if (workspaces.length < 2) {
+    return (
+      <p
+        title={currentWorkspace?.name}
+        className="truncate px-2.5 py-1 text-sm font-medium"
+      >
+        <span className="sr-only">Workspace: </span>
+        <span>{currentWorkspace?.name ?? "Workspace"}</span>
+      </p>
+    );
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
