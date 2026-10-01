@@ -19,6 +19,10 @@ const serverEnvSchema = z.object({
   DEMO_VISITOR_SALT: optionalString(),
   // Optional: without it the cleanup cron route refuses every request.
   CRON_SECRET: optionalString(),
+  // Set by Vercel. The branch URL has no protocol; it is used only for the
+  // preview metadataBase.
+  VERCEL_ENV: optionalString(),
+  VERCEL_BRANCH_URL: optionalString(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -48,4 +52,6 @@ export const serverEnv = parseServerEnv({
   ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
   DEMO_VISITOR_SALT: process.env.DEMO_VISITOR_SALT,
   CRON_SECRET: process.env.CRON_SECRET,
+  VERCEL_ENV: process.env.VERCEL_ENV,
+  VERCEL_BRANCH_URL: process.env.VERCEL_BRANCH_URL,
 });

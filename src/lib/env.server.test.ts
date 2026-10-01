@@ -13,6 +13,8 @@ describe("parseServerEnv", () => {
       ANTHROPIC_API_KEY: undefined,
       DEMO_VISITOR_SALT: undefined,
       CRON_SECRET: undefined,
+      VERCEL_ENV: undefined,
+      VERCEL_BRANCH_URL: undefined,
     });
   });
 
@@ -25,6 +27,8 @@ describe("parseServerEnv", () => {
       ANTHROPIC_API_KEY: "sk-ant-test_123",
       DEMO_VISITOR_SALT: "salt_123",
       CRON_SECRET: "cron_123",
+      VERCEL_ENV: "preview",
+      VERCEL_BRANCH_URL: "clientdesk-git-feat-deploy-owner.vercel.app",
     };
 
     const env = parseServerEnv(raw);
@@ -38,6 +42,12 @@ describe("parseServerEnv", () => {
     const env = parseServerEnv({ STRIPE_SECRET_KEY: "" });
 
     expect(env.STRIPE_SECRET_KEY).toBeUndefined();
+  });
+
+  it("treats an empty VERCEL_BRANCH_URL as absent", () => {
+    const env = parseServerEnv({ VERCEL_BRANCH_URL: "" });
+
+    expect(env.VERCEL_BRANCH_URL).toBeUndefined();
   });
 
   it("throws when the input is undefined", () => {
