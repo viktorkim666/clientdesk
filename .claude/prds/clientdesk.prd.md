@@ -41,7 +41,7 @@ For the portfolio, we'll know we're right when **an Upwork client can open the l
 - Billing has a Free plan (up to 2 clients, no AI) and a Pro plan (unlimited clients, AI included), with checkout, self-serve subscription management, and plan state kept in sync with the payment provider. The demo runs in test mode.
 - AI: a "Draft update" action turns the last week of project activity into a client update, which a member edits and publishes. Output streams in, and requests are rate-limited.
 - Demo: "Try as agency" and "Try as client" buttons log straight into a seeded workspace. Demo data resets on a schedule.
-- Live deploy, public repository, README and a short video walkthrough.
+- Live deploy, public repository and README.
 
 **Out of scope**
 
@@ -61,7 +61,7 @@ For the portfolio, we'll know we're right when **an Upwork client can open the l
 | 3   | Billing              | A workspace upgrades to Pro and manages its own subscription; Free-plan limits are enforced                      | complete    | `.claude/plans/billing.plan.md`                                                                     |
 | 4   | AI update draft      | A member generates, edits and publishes a weekly client update                                                   | complete    | `.claude/plans/ai-update-draft.plan.md`                                                             |
 | 4.5 | Design               | The app and a landing page look like a finished product in both themes and on a phone                            | complete    | `.claude/prds/clientdesk-design.prd.md`                                                             |
-| 5   | Demo and launch      | A visitor tries both roles in one click on the live site; README and walkthrough video are published             | in-progress | `.claude/plans/brand-and-polish.plan.md` (1 of 2), `.claude/plans/demo-and-launch.plan.md` (2 of 2) |
+| 5   | Demo and launch      | A visitor tries both roles in one click on the live site; README is published                                    | in-progress | `.claude/plans/brand-and-polish.plan.md` (1 of 2), `.claude/plans/demo-and-launch.plan.md` (2 of 2) |
 
 ## Open Questions
 
