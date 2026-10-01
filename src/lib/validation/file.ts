@@ -53,7 +53,7 @@ export const DEMO_ALLOWED_MIME_TYPES = [
 
 const DEMO_MAX_FILE_MB = DEMO_MAX_FILE_BYTES / (1024 * 1024);
 
-export const DEMO_UPLOAD_HINT = `Demo: up to ${DEMO_MAX_NEW_FILES} files, ${DEMO_MAX_FILE_MB} MB each, images or PDF`;
+export const DEMO_UPLOAD_HINT = `Demo: up to ${DEMO_MAX_NEW_FILES}\u00a0files, ${DEMO_MAX_FILE_MB}\u00a0MB each, images or PDF`;
 
 /** Shown when the sandbox has used all its uploads. Deleting a file does not
  * free a slot: the database counts every upload for the life of the sandbox. */
