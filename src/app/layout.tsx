@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { env } from "@/lib/env";
-import { SITE_DESCRIPTION } from "@/lib/site";
+import { serverEnv } from "@/lib/env.server";
+import { resolveMetadataBase, SITE_DESCRIPTION } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,8 +17,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  // Makes the generated icon and social image URLs absolute.
-  metadataBase: new URL(env.NEXT_PUBLIC_SITE_URL),
+  // Makes the generated icon and social image URLs absolute. Previews use
+  // their own branch URL.
+  metadataBase: resolveMetadataBase({
+    siteUrl: env.NEXT_PUBLIC_SITE_URL,
+    vercelEnv: serverEnv.VERCEL_ENV,
+    vercelBranchUrl: serverEnv.VERCEL_BRANCH_URL,
+  }),
   title: { default: "Clientdesk", template: "%s · Clientdesk" },
   description: SITE_DESCRIPTION,
   openGraph: { siteName: "Clientdesk", type: "website" },
