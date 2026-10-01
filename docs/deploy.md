@@ -149,6 +149,8 @@ The job also shows up under Cron Jobs in the Vercel project settings.
 
 ## 12. Preview deployments
 
+The live project runs production only: preview deployments are turned off in the Vercel project settings, so a pull request builds nothing and a merge into `main` deploys the site. If you turn previews on, this is how they behave:
+
 - Open Graph and icon URLs use the preview's own branch URL.
 - Google sign-in redirects, Stripe return URLs, invite links and links in update emails are built from `NEXT_PUBLIC_SITE_URL`, so on a preview they lead to production.
 - Cron jobs do not run on previews.
