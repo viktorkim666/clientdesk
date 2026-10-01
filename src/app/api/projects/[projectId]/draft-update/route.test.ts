@@ -211,6 +211,63 @@ describe("POST /api/projects/[projectId]/draft-update", () => {
     expect(response.status).toBe(429);
   });
 
+  it("returns 429 with the demo_limit flag when claim_ai_draft raises CD004 for the sandbox limit", async () => {
+    const supabase = buildFakeSupabase({
+      rpcError: { code: "CD004", message: "ai_demo_limit" },
+    });
+    createClientMock.mockResolvedValue(supabase);
+
+    const response = await POST(buildRequest(), context());
+
+    expect(response.status).toBe(429);
+    expect(await response.json()).toEqual({
+      error: "demo_limit",
+      reason: "sandbox",
+    });
+  });
+
+  it("returns 429 with the demo_limit flag and the budget reason when the daily demo budget is spent", async () => {
+    const supabase = buildFakeSupabase({
+      rpcError: { code: "CD004", message: "ai_demo_budget" },
+    });
+    createClientMock.mockResolvedValue(supabase);
+
+    const response = await POST(buildRequest(), context());
+
+    expect(response.status).toBe(429);
+    expect(await response.json()).toEqual({
+      error: "demo_limit",
+      reason: "budget",
+    });
+  });
+
+  it("reports the sandbox reason for a CD004 with an unknown message", async () => {
+    const supabase = buildFakeSupabase({
+      rpcError: { code: "CD004", message: "something_new" },
+    });
+    createClientMock.mockResolvedValue(supabase);
+
+    const response = await POST(buildRequest(), context());
+
+    expect(response.status).toBe(429);
+    expect(await response.json()).toEqual({
+      error: "demo_limit",
+      reason: "sandbox",
+    });
+  });
+
+  it("keeps the normal rate limit body distinct from the demo limit", async () => {
+    const supabase = buildFakeSupabase({
+      rpcError: { code: "CD003", message: "ai_rate_limited" },
+    });
+    createClientMock.mockResolvedValue(supabase);
+
+    const response = await POST(buildRequest(), context());
+
+    const body = (await response.json()) as { error: string };
+    expect(body.error).not.toBe("demo_limit");
+  });
+
   it("returns 404 when claim_ai_draft refuses a non-staff or unknown project", async () => {
     const supabase = buildFakeSupabase({
       rpcError: { message: "only staff can request an AI draft" },

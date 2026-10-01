@@ -70,6 +70,12 @@ describe("readDraftError", () => {
 });
 
 describe("draftOutcomeStatusMessage", () => {
+  it("returns null for a demo limit, which the form shows in its own alert", () => {
+    expect(
+      draftOutcomeStatusMessage({ status: "demo_limit", reason: "sandbox" }),
+    ).toBeNull();
+  });
+
   it("returns 'Draft added.' for a completed draft", () => {
     expect(draftOutcomeStatusMessage({ status: "done" })).toBe("Draft added.");
   });
@@ -140,6 +146,47 @@ describe("streamDraft", () => {
       status: "error",
       message: "Too many AI drafts right now. Try again later.",
     });
+  });
+
+  it.each(["sandbox", "budget"] as const)(
+    "reports a demo limit with its reason (%s) instead of an error message",
+    async (reason) => {
+      const fetch: DraftFetch = vi.fn(() =>
+        Promise.resolve({
+          ok: false,
+          json: () => Promise.resolve({ error: "demo_limit", reason }),
+          body: null,
+        }),
+      );
+
+      const outcome = await streamDraft({
+        fetch,
+        projectId: "proj-1",
+        signal: new AbortController().signal,
+        onChunk: vi.fn(),
+      });
+
+      expect(outcome).toEqual({ status: "demo_limit", reason });
+    },
+  );
+
+  it("treats an unknown demo limit reason as the sandbox limit", async () => {
+    const fetch: DraftFetch = vi.fn(() =>
+      Promise.resolve({
+        ok: false,
+        json: () => Promise.resolve({ error: "demo_limit" }),
+        body: null,
+      }),
+    );
+
+    const outcome = await streamDraft({
+      fetch,
+      projectId: "proj-1",
+      signal: new AbortController().signal,
+      onChunk: vi.fn(),
+    });
+
+    expect(outcome).toEqual({ status: "demo_limit", reason: "sandbox" });
   });
 
   it("keeps chunks already received and reports a stopped draft on a mid-stream error", async () => {
