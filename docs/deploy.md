@@ -55,6 +55,13 @@ Delete `.env.deploy` afterwards.
 
 The SQL file is safe to run again: it deletes its own rows before inserting them. The blob script takes `SUPABASE_URL`, not `NEXT_PUBLIC_SUPABASE_URL`. Without both variables it uploads to the local stack instead, so check the output names the hosted project. It exits with an error if any upload fails. Afterwards the `project-files` bucket holds 8 objects.
 
+The files can also go up without the secret key, through the CLI you logged in with; then there is no `.env.deploy` to create. After the template SQL has run, list the rows and copy each file to its `storage_path`:
+
+```bash
+pnpm supabase db query --linked "select name, storage_path, mime_type from public.project_files where workspace_id = '30000000-0000-0000-0000-000000000001'"
+pnpm supabase storage cp supabase/demo/files/<name> ss:///project-files/<storage_path> --linked --experimental --content-type <mime_type>
+```
+
 ## 5. Auth settings (owner)
 
 `supabase/config.toml` describes the local stack, with `site_url` on `127.0.0.1`. Pushing it with `supabase config push` would write those local values to the hosted project, so set these in the dashboard instead:
@@ -90,6 +97,10 @@ Use test mode only, with a secret key that starts with `sk_test_`. Demo sandboxe
 3. Leave "Automatically expose System Environment Variables" on. Preview deployments read `VERCEL_ENV` and `VERCEL_BRANCH_URL` from it.
 4. Enter the environment variables from the next section before the first deploy.
 
+If `<name>.vercel.app` is taken, Vercel gives the project another host. You can add a free `*.vercel.app` name of your own under Domains in the project settings.
+
+To use the Vercel CLI, run it as `npx vercel@latest`. `pnpm dlx vercel` stops on an ignored build script under pnpm 12. Deploy from a clean checkout: from a working folder the CLI also uploads build output such as `.next-e2e` and hits the 100 MB file limit.
+
 ## 8. Environment variables (owner)
 
 | Variable                               | Value                                | Production | Preview | Without it                                |
@@ -114,7 +125,7 @@ Set a monthly spend limit in the Anthropic console. The app caps drafts at 3 per
 
 ## 9. First deploy (owner)
 
-Deploy. If the host turned out different from the `NEXT_PUBLIC_SITE_URL` you entered, fix the variable, the Supabase URLs from section 5 and the Stripe endpoint from section 6, then redeploy.
+Deploy. A project's first deployment is assigned to production, whichever branch it comes from. If the host turned out different from the `NEXT_PUBLIC_SITE_URL` you entered, fix the variable, the Supabase URLs from section 5 and the Stripe endpoint from section 6, then redeploy.
 
 ## 10. Cron
 
