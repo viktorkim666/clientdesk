@@ -32,7 +32,7 @@ Each click creates four users (agency owner, member and two clients) through the
 
 ### Limits and cleanup
 
-A visitor can start 3 sandboxes per hour, counted by a salted hash of their IP address; the raw address is never stored. Across all visitors the limit is 40 new sandboxes per hour and 300 live ones. `GET /api/cron/cleanup-demo` with `Authorization: Bearer $CRON_SECRET` deletes expired sandboxes with their users, Storage files and Stripe test customers, plus AI draft request rows older than 7 days. A sandbox's record is removed only after all of that is gone, so anything that failed is retried on the next run, and demo users no sandbox owns are swept after 25 hours. The deploy adds the daily schedule for it.
+A visitor can start 3 sandboxes per hour, counted by a salted hash of their IP address; the raw address is never stored. Across all visitors the limit is 40 new sandboxes per hour and 300 live ones. `GET /api/cron/cleanup-demo` with `Authorization: Bearer $CRON_SECRET` deletes expired sandboxes with their users, Storage files and Stripe test customers, plus AI draft request rows older than 7 days. A sandbox's record is removed only after all of that is gone, so anything that failed is retried on the next run, and demo users no sandbox owns are swept after 25 hours. `vercel.json` runs it once a day at 04:00 UTC; `docs/deploy.md` covers the setup.
 
 ### Mail and invites in a sandbox
 
@@ -163,7 +163,7 @@ After changing the mark, rebuild the ICO:
 pnpm icons:favicon
 ```
 
-`metadataBase` in the root layout reads `NEXT_PUBLIC_SITE_URL`, which makes the social image URL absolute. Social platforms need that to fetch it.
+`metadataBase` in the root layout reads `NEXT_PUBLIC_SITE_URL`, which makes the social image URL absolute; on a Vercel preview deployment it uses the branch URL instead. Social platforms need that to fetch it.
 
 ## Tests
 
