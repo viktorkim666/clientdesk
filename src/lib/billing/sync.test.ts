@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { syncWorkspaceBilling } from "@/lib/billing/sync";
 import type {
   SyncStripeClient,
@@ -82,10 +82,16 @@ function buildSupabase(options: {
                 Promise.resolve({
                   data:
                     options.existingWorkspaceId === undefined
-                      ? { workspace_id: WORKSPACE_ID }
+                      ? {
+                          workspace_id: WORKSPACE_ID,
+                          stripe_customer_id: CUSTOMER_ID,
+                        }
                       : options.existingWorkspaceId === null
                         ? null
-                        : { workspace_id: options.existingWorkspaceId },
+                        : {
+                            workspace_id: options.existingWorkspaceId,
+                            stripe_customer_id: CUSTOMER_ID,
+                          },
                   error: null,
                 }),
             }),
@@ -311,5 +317,79 @@ describe("syncWorkspaceBilling", () => {
     expect(supabase.spies.upsert).not.toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalled();
     consoleErrorSpy.mockRestore();
+  });
+
+  describe("a billing row with no Stripe customer (a demo workspace pinned to Pro)", () => {
+    const PINNED_WORKSPACE_ID = "a0000000-0000-4000-8000-0000000000aa";
+    type Row = { workspace_id: string; stripe_customer_id: string | null };
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    /** An in-memory workspace_billing table: `select().eq()` filters the
+     * rows by the column asked for, as the database would, and `upsert`
+     * records what was written. */
+    function buildTable(rows: Row[]) {
+      const upsert = vi.fn(() => Promise.resolve({ error: null }));
+      const client: SyncSupabaseClient = {
+        from: () => ({
+          select: () => ({
+            eq: (column, value) => ({
+              maybeSingle: () =>
+                Promise.resolve({
+                  data:
+                    rows.find(
+                      (row) =>
+                        (row as Record<string, string | null>)[column] ===
+                        value,
+                    ) ?? null,
+                  error: null,
+                }),
+            }),
+          }),
+          upsert,
+        }),
+      };
+      return { client, upsert };
+    }
+
+    it("is not matched by the lookup for a customer, so a customer id never resolves to it", async () => {
+      const table = buildTable([
+        { workspace_id: PINNED_WORKSPACE_ID, stripe_customer_id: null },
+      ]);
+      const stripe = buildStripe({
+        subscriptions: [buildSubscription({})],
+        customer: { metadata: { workspace_id: WORKSPACE_ID } },
+      });
+
+      await syncWorkspaceBilling(CUSTOMER_ID, {
+        stripe,
+        supabase: table.client,
+      });
+
+      expect(table.upsert).toHaveBeenCalledTimes(1);
+      expect(table.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({ workspace_id: WORKSPACE_ID }),
+        { onConflict: "workspace_id" },
+      );
+    });
+
+    it("is never overwritten, even by a customer whose metadata names its workspace", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const table = buildTable([
+        { workspace_id: PINNED_WORKSPACE_ID, stripe_customer_id: null },
+      ]);
+      const stripe = buildStripe({
+        subscriptions: [buildSubscription({ status: "canceled" })],
+        customer: { metadata: { workspace_id: PINNED_WORKSPACE_ID } },
+      });
+
+      await expect(
+        syncWorkspaceBilling(CUSTOMER_ID, { stripe, supabase: table.client }),
+      ).resolves.toBeUndefined();
+
+      expect(table.upsert).not.toHaveBeenCalled();
+    });
   });
 });

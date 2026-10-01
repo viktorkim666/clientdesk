@@ -60,7 +60,10 @@ export interface SyncSupabaseClient {
         value: string,
       ) => {
         maybeSingle: () => PromiseLike<{
-          data: { workspace_id: string } | null;
+          data: {
+            workspace_id: string;
+            stripe_customer_id: string | null;
+          } | null;
           error: Error | null;
         }>;
       };
@@ -134,7 +137,7 @@ export async function syncWorkspaceBilling(
 
   const { data: existingRow } = await supabase
     .from("workspace_billing")
-    .select("workspace_id")
+    .select("workspace_id, stripe_customer_id")
     .eq("stripe_customer_id", customerId)
     .maybeSingle();
 
@@ -160,6 +163,24 @@ export async function syncWorkspaceBilling(
     throw new Error(
       `syncWorkspaceBilling: no workspace found for customer ${customerId}`,
     );
+  }
+
+  if (!existingRow) {
+    // The workspace came from the customer's metadata, not from a row that
+    // already belongs to this customer. A row with no Stripe customer is a
+    // demo workspace pinned to Pro: it has nothing to sync and must not be
+    // overwritten with a real subscription's state (or the lack of one).
+    const { data: workspaceRow } = await supabase
+      .from("workspace_billing")
+      .select("workspace_id, stripe_customer_id")
+      .eq("workspace_id", workspaceId)
+      .maybeSingle();
+    if (workspaceRow && workspaceRow.stripe_customer_id === null) {
+      console.error(
+        `syncWorkspaceBilling: workspace ${workspaceId} has a billing row with no Stripe customer; skipping customer ${customerId}`,
+      );
+      return;
+    }
   }
 
   const { error } = await supabase.from("workspace_billing").upsert(

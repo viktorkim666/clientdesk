@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Check } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
@@ -18,6 +19,7 @@ import { getCurrentWorkspace } from "@/lib/workspace/current";
 import { getStripe, isBillingConfigured } from "@/lib/billing/stripe";
 import { syncWorkspaceBilling, toSyncSupabaseClient } from "@/lib/billing/sync";
 import { FREE_CLIENT_LIMIT, planFromStatus } from "@/lib/billing/plan";
+import { parseSandboxBilling } from "@/lib/demo/sandbox-billing";
 import { BillingActions } from "./billing-actions";
 
 export default async function BillingPage({
@@ -72,17 +74,23 @@ export default async function BillingPage({
     redirect(`/w/${workspace.slug}/settings/billing`);
   }
 
-  const [{ data: billingRow }, { count: clientCount }] = await Promise.all([
-    supabase
-      .from("workspace_billing")
-      .select("subscription_status, current_period_end, cancel_at")
-      .eq("workspace_id", workspace.id)
-      .maybeSingle(),
-    supabase
-      .from("clients")
-      .select("id", { count: "exact", head: true })
-      .eq("workspace_id", workspace.id),
-  ]);
+  // Which half of a demo sandbox this workspace is, if any. A security
+  // invoker function, so it reads under the caller's own RLS; it runs with
+  // the other two reads, not before them.
+  const [{ data: billingRow }, { count: clientCount }, sandboxResult] =
+    await Promise.all([
+      supabase
+        .from("workspace_billing")
+        .select("subscription_status, current_period_end, cancel_at")
+        .eq("workspace_id", workspace.id)
+        .maybeSingle(),
+      supabase
+        .from("clients")
+        .select("id", { count: "exact", head: true })
+        .eq("workspace_id", workspace.id),
+      supabase.rpc("get_sandbox_billing", { p_workspace_id: workspace.id }),
+    ]);
+  const sandbox = parseSandboxBilling(sandboxResult);
 
   const plan = planFromStatus(billingRow?.subscription_status ?? null);
   const renewalDate =
@@ -96,6 +104,9 @@ export default async function BillingPage({
 
   const usedClients = clientCount ?? 0;
   const isOwner = workspace.role === "owner";
+  // The sandbox's Pro workspace has a pinned billing row and no Stripe
+  // customer, so there is nothing to manage or resync there.
+  const isSandboxPro = sandbox?.kind === "pro";
   const includes =
     plan === "pro"
       ? ["Updates, files and comments", "AI update drafts"]
@@ -148,7 +159,7 @@ export default async function BillingPage({
               </p>
             ) : null}
           </CardContent>
-          {isOwner ? (
+          {isOwner && !isSandboxPro ? (
             <CardFooter>
               <BillingActions
                 workspaceSlug={workspace.slug}
@@ -187,6 +198,30 @@ export default async function BillingPage({
           </Card>
         ) : null}
       </div>
+      {sandbox?.kind === "pro" ? (
+        <Card className="max-w-2xl bg-muted/50">
+          <CardHeader>
+            <CardTitle render={<h2 />}>Demo workspace</CardTitle>
+            <CardDescription>
+              This demo workspace is on Pro, so every feature is unlocked.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            {sandbox.freeSlug ? (
+              <p>
+                To try checkout, open{" "}
+                <Link
+                  href={`/w/${sandbox.freeSlug}/settings/billing`}
+                  className="inline-flex items-center font-medium text-foreground underline underline-offset-4 max-sm:min-h-11"
+                >
+                  Northwind Labs
+                </Link>
+                , the Free workspace in this demo.
+              </p>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
       <Card className="max-w-2xl bg-muted/50">
         <CardHeader>
           <CardTitle render={<h2 />}>Test mode</CardTitle>
