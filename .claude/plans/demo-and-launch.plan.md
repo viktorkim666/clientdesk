@@ -68,38 +68,39 @@ Each PR goes through `orch-add-feature` (C through `orch-fix-defect` or `orch-ch
 
 ## Files to Change
 
-| File                                                                               | Action         | Why                                                                                                              |
-| ---------------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `supabase/seed.sql`                                                                | UPDATE         | Remove the Northwind block; test fixtures stay as they are                                                       |
-| `supabase/demo/template.sql`                                                       | CREATE         | Northwind template: passwordless users with `auth.identities`, fixed timestamps, idempotent (delete then insert) |
-| `supabase/demo/files/*`                                                            | CREATE         | 8 small PNG and PDF blobs for the template file rows                                                             |
-| `supabase/config.toml`                                                             | UPDATE (owner) | Add `./demo/template.sql` to `[db.seed] sql_paths`. Protected file: the owner pastes this line                   |
-| `supabase/migrations/2026093010xxxx_demo_sandboxes.sql`                            | CREATE         | `demo_sandboxes` table, `create_demo_sandbox`, `delete_expired_demo_sandboxes`, `private.is_demo_workspace`      |
-| `supabase/migrations/2026093011xxxx_demo_limits.sql`                               | CREATE (PR B)  | Demo branches in `claim_ai_draft`, upload trigger on `project_files`                                             |
-| `supabase/tests/22_demo_sandbox_test.sql`, `23_demo_limits_test.sql`               | CREATE         | Clone counts, isolation between sandboxes, grants, caps, AI and upload limits                                    |
-| `scripts/demo/upload-template-blobs.mts`                                           | CREATE         | Uploads the template blobs to Storage, locally and on the hosted project                                         |
-| `src/lib/demo/*`                                                                   | CREATE         | Sandbox creation, sign-in, role switch, visitor hash, user factory                                               |
-| `src/app/demo/actions.ts`                                                          | CREATE         | `startDemo(role)` and `switchDemoRole()` server actions                                                          |
-| `src/components/demo-banner.tsx`                                                   | CREATE         | "Viewing as ..." banner with the role switch                                                                     |
-| `src/components/landing/hero.tsx`, `final-cta.tsx`, `site-header.tsx`              | UPDATE         | "Try as agency" and "Try as client" buttons                                                                      |
-| `src/app/w/[slug]/layout.tsx`                                                      | UPDATE         | Render the banner in a sandbox                                                                                   |
-| `src/app/api/cron/cleanup-demo/route.ts`                                           | CREATE         | Bearer `CRON_SECRET`, deletes expired sandboxes, users, blobs, Stripe customers, old draft requests              |
-| `src/lib/email/index.ts`                                                           | UPDATE         | Drop recipients on the demo domain                                                                               |
-| `src/app/w/[slug]/settings/members/*`                                              | UPDATE         | Invites disabled in a sandbox; copyable link when no sender (if the owner picks that)                            |
-| `src/lib/ai/*`, `draft-update/route.ts`, draft UI                                  | UPDATE (PR B)  | New `ai_demo_budget` error, saved sample draft                                                                   |
-| `src/lib/validation/file.ts`, `file-uploader.tsx`                                  | UPDATE (PR B)  | Demo limits checked before upload, with clear messages                                                           |
-| `src/app/w/[slug]/settings/billing/page.tsx`                                       | UPDATE (PR B)  | Sandbox note with a link to the Free workspace                                                                   |
-| `comment-row.tsx`, `comment-form.tsx`, `site-header.tsx`, `workspace-switcher.tsx` | UPDATE (PR C)  | UI nits                                                                                                          |
-| `vercel.json`                                                                      | CREATE (PR D)  | Daily cron for `/api/cron/cleanup-demo`                                                                          |
-| `src/app/layout.tsx`, `src/lib/env.ts`, `env.server.ts`, `.env.example`            | UPDATE         | Preview `metadataBase`; `CRON_SECRET`, `DEMO_VISITOR_SALT`                                                       |
-| `docs/deploy.md`                                                                   | CREATE (PR D)  | Step-by-step for the owner: Supabase Cloud, Vercel, Stripe webhook, env vars, template upload                    |
-| `scripts/video/record.ts`, `scripts/video/README.md`                               | CREATE (PR E)  | Captioned walkthrough recording and ffmpeg conversion                                                            |
-| `README.md`                                                                        | UPDATE         | Live demo link, video, deploy notes, updated demo section                                                        |
-| `playwright.config.ts`, `e2e/support/*`                                            | UPDATE         | e2e gets the local secret key so the demo buttons work; Stripe keys stay empty                                   |
-| `e2e/demo-sandbox.spec.ts`, `demo-limits.spec.ts`                                  | CREATE         | Both buttons, role switch, isolation, limits                                                                     |
-| `e2e/demo-data.spec.ts`, `visual-polish.spec.ts`, `destructive-contrast.spec.ts`   | UPDATE         | Enter Northwind through the demo button instead of `password123`                                                 |
-| `.claude/plans/brand-and-polish.plan.md`                                           | UPDATE         | Tick "Validation passes locally and in CI"                                                                       |
-| `.claude/prds/clientdesk.prd.md`                                                   | UPDATE         | Row 5 points at this plan (2 of 2); `complete` after PR E                                                        |
+| File                                                                                 | Action         | Why                                                                                                              |
+| ------------------------------------------------------------------------------------ | -------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `supabase/seed.sql`                                                                  | UPDATE         | Remove the Northwind block; test fixtures stay as they are                                                       |
+| `supabase/demo/template.sql`                                                         | CREATE         | Northwind template: passwordless users with `auth.identities`, fixed timestamps, idempotent (delete then insert) |
+| `supabase/demo/files/*`                                                              | CREATE         | 8 small PNG and PDF blobs for the template file rows                                                             |
+| `supabase/config.toml`                                                               | UPDATE (owner) | Add `./demo/template.sql` to `[db.seed] sql_paths`. Protected file: the owner pastes this line                   |
+| `supabase/migrations/2026093010xxxx_demo_sandboxes.sql`                              | CREATE         | `demo_sandboxes` table, `create_demo_sandbox`, `delete_expired_demo_sandboxes`, `private.is_demo_workspace`      |
+| `supabase/migrations/20261001100000_demo_ai_limits.sql`                              | CREATE (PR B)  | AI budget limit on `claim_ai_draft`, demo_ai_usage ledger, CD004 errors                                          |
+| `supabase/migrations/20261001110000_demo_upload_limits.sql`                          | CREATE (PR B)  | Upload count and type limits, demo_upload_usage ledger, CD005 errors, storage policy cap                         |
+| `supabase/tests/23_demo_hardening_test.sql` through `26_demo_usage_cleanup_test.sql` | CREATE         | Demo user guards, AI limits, upload limits, usage ledgers and cleanup                                            |
+| `scripts/demo/upload-template-blobs.mts`                                             | CREATE         | Uploads the template blobs to Storage, locally and on the hosted project                                         |
+| `src/lib/demo/*`                                                                     | CREATE         | Sandbox creation, sign-in, role switch, visitor hash, user factory                                               |
+| `src/app/demo/actions.ts`                                                            | CREATE         | `startDemo(role)` and `switchDemoRole()` server actions                                                          |
+| `src/components/demo-banner.tsx`                                                     | CREATE         | "Viewing as ..." banner with the role switch                                                                     |
+| `src/components/landing/hero.tsx`, `final-cta.tsx`, `site-header.tsx`                | UPDATE         | "Try as agency" and "Try as client" buttons                                                                      |
+| `src/app/w/[slug]/layout.tsx`                                                        | UPDATE         | Render the banner in a sandbox                                                                                   |
+| `src/app/api/cron/cleanup-demo/route.ts`                                             | CREATE         | Bearer `CRON_SECRET`, deletes expired sandboxes, users, blobs, Stripe customers, old draft requests              |
+| `src/lib/email/index.ts`                                                             | UPDATE         | Drop recipients on the demo domain                                                                               |
+| `src/app/w/[slug]/settings/members/*`                                                | UPDATE         | Invites disabled in a sandbox; copyable link when no sender (if the owner picks that)                            |
+| `src/lib/ai/*`, `draft-update/route.ts`, draft UI                                    | UPDATE (PR B)  | New `ai_demo_budget` error, saved sample draft                                                                   |
+| `src/lib/validation/file.ts`, `file-uploader.tsx`                                    | UPDATE (PR B)  | Demo limits checked before upload, with clear messages                                                           |
+| `src/app/w/[slug]/settings/billing/page.tsx`                                         | UPDATE (PR B)  | Sandbox note with a link to the Free workspace                                                                   |
+| `comment-row.tsx`, `comment-form.tsx`, `site-header.tsx`, `workspace-switcher.tsx`   | UPDATE (PR C)  | UI nits                                                                                                          |
+| `vercel.json`                                                                        | CREATE (PR D)  | Daily cron for `/api/cron/cleanup-demo`                                                                          |
+| `src/app/layout.tsx`, `src/lib/env.ts`, `env.server.ts`, `.env.example`              | UPDATE         | Preview `metadataBase`; `CRON_SECRET`, `DEMO_VISITOR_SALT`                                                       |
+| `docs/deploy.md`                                                                     | CREATE (PR D)  | Step-by-step for the owner: Supabase Cloud, Vercel, Stripe webhook, env vars, template upload                    |
+| `scripts/video/record.ts`, `scripts/video/README.md`                                 | CREATE (PR E)  | Captioned walkthrough recording and ffmpeg conversion                                                            |
+| `README.md`                                                                          | UPDATE         | Live demo link, video, deploy notes, updated demo section                                                        |
+| `playwright.config.ts`, `e2e/support/*`                                              | UPDATE         | e2e gets the local secret key so the demo buttons work; Stripe keys stay empty                                   |
+| `e2e/demo-sandbox.spec.ts`, `demo-limits.spec.ts`                                    | CREATE         | Both buttons, role switch, isolation, limits                                                                     |
+| `e2e/demo-data.spec.ts`, `visual-polish.spec.ts`, `destructive-contrast.spec.ts`     | UPDATE         | Enter Northwind through the demo button instead of `password123`                                                 |
+| `.claude/plans/brand-and-polish.plan.md`                                             | UPDATE         | Tick "Validation passes locally and in CI"                                                                       |
+| `.claude/prds/clientdesk.prd.md`                                                     | UPDATE         | Row 5 points at this plan (2 of 2); `complete` after PR E                                                        |
 
 ## Tasks
 
@@ -141,18 +142,18 @@ Each PR goes through `orch-add-feature` (C through `orch-fix-defect` or `orch-ch
 
 #### Task B1: AI budget
 
-- **Action**: In a demo workspace `claim_ai_draft` allows 3 drafts per sandbox and a global daily budget (default 150 per day across all sandboxes), raising `ai_demo_limit` (`CD004`). The route maps it to a 429 with a flag, and the draft UI shows "You've used the 3 AI drafts in this demo" with a saved sample draft the visitor can still edit and publish.
-- **Validate**: pgTAP for both limits; route and UI unit tests; e2e with the fake generator.
+- **Action**: In a demo workspace `claim_ai_draft` allows 3 drafts per sandbox and a global daily budget (default 150 per day across all sandboxes). Both limits count a demo_ai_usage ledger with no foreign keys (deleted rows do not free slots). The function raises `ai_demo_limit` for sandbox limit and `ai_demo_budget` for global budget, both CD004. The route maps it to a 429 with a flag, and the draft UI shows a message with a saved sample draft the visitor can still edit and publish. Migration: `20261001100000_demo_ai_limits.sql`.
+- **Validate**: pgTAP 24_demo_ai_limits_test.sql for both limits; route and UI unit tests; e2e/demo-limits.spec.ts with the fake generator.
 
 #### Task B2: Upload limits
 
-- **Action**: A `before insert` trigger on `project_files` in a demo workspace refuses a sixth new file, anything over 2 MB, or a type other than image or PDF (`CD005`). The uploader checks the same rules first and shows the limit in the drop zone hint. A Storage insert policy caps the object count under a sandbox prefix, so a direct upload without a file row is bounded too.
-- **Validate**: pgTAP for the trigger and policy; uploader unit tests; e2e uploads a PNG and sees a refused 3 MB file.
+- **Action**: A `before insert` trigger `enforce_demo_upload_limits` on `project_files` in a demo workspace refuses a sixth new file, anything over 2 MB, or a type other than image or PDF (CD005). The trigger counts a demo_upload_usage ledger with no foreign keys, so deleting a file frees no slot. Five CD005 messages: demo_upload_count_limit, demo_upload_size_limit, demo_upload_type_limit, demo_upload_object_missing, demo_upload_path_invalid. The trigger answers only members of the workspace; for anyone else row level security gives its usual error. The uploader checks the same rules first and shows the limit in the drop zone hint. A Storage insert policy (volatile, under a per-workspace advisory lock) caps the object count under a sandbox prefix, accepts only canonical paths and refuses a name a file row already uses, so a direct upload without a file row is bounded and a registered object cannot be swapped. Accepted residual risk: direct uploads to Storage that are never registered are not counted in the 5; the object cap, 10 MiB per object and the 24-hour sandbox life bound them. The type limit trusts the Content-Type Storage recorded. Migration: `20261001110000_demo_upload_limits.sql`.
+- **Validate**: pgTAP 25_demo_upload_limits_test.sql for trigger and policy; uploader unit tests; e2e/demo-limits.spec.ts uploads a PNG and sees a refused 3 MB file.
 
 #### Task B3: Billing in a sandbox
 
-- **Action**: The Pro sandbox billing page says "This demo workspace is on Pro" and links to the Free workspace. On the Free workspace Upgrade runs the normal Stripe Checkout in test mode; the page shows the test card number `4242 4242 4242 4242` as help text. Billing sync and the webhook ignore the pinned billing row because it has no customer.
-- **Validate**: page unit tests; manual run against Stripe test mode with the owner's keys, as in milestone 3.
+- **Action**: The Pro sandbox billing page says "This demo workspace is on Pro, so every feature is unlocked" and links to the Free workspace called "Northwind Labs". On the Free workspace Upgrade runs the normal Stripe Checkout in test mode; the page shows the test card number `4242 4242 4242 4242` as help text. Helper RPC `get_sandbox_billing(p_workspace_id)` returns which half of the sandbox this workspace is. Billing sync and the webhook ignore the pinned billing row because it has no customer.
+- **Validate**: e2e/demo-billing.spec.ts and manual run against Stripe test mode with the owner's keys.
 
 ### PR C: UI nits
 
