@@ -102,6 +102,24 @@ export type Database = {
           },
         ];
       };
+      demo_ai_usage: {
+        Row: {
+          created_at: string;
+          id: string;
+          sandbox_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          sandbox_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          sandbox_id?: string;
+        };
+        Relationships: [];
+      };
       demo_sandboxes: {
         Row: {
           client_one_user_id: string;
@@ -188,6 +206,24 @@ export type Database = {
           },
         ];
       };
+      demo_upload_usage: {
+        Row: {
+          created_at: string;
+          id: string;
+          sandbox_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          sandbox_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          sandbox_id?: string;
+        };
+        Relationships: [];
+      };
       invitations: {
         Row: {
           accepted_at: string | null;
@@ -273,6 +309,7 @@ export type Database = {
           size_bytes: number;
           storage_path: string;
           uploaded_by: string | null;
+          uploaded_in_demo: boolean;
           workspace_id: string;
         };
         Insert: {
@@ -284,6 +321,7 @@ export type Database = {
           size_bytes: number;
           storage_path: string;
           uploaded_by?: string | null;
+          uploaded_in_demo?: boolean;
           workspace_id: string;
         };
         Update: {
@@ -295,6 +333,7 @@ export type Database = {
           size_bytes?: number;
           storage_path?: string;
           uploaded_by?: string | null;
+          uploaded_in_demo?: boolean;
           workspace_id?: string;
         };
         Relationships: [
@@ -614,9 +653,17 @@ export type Database = {
         Returns: Json;
       };
       demo_can_start: { Args: { p_visitor_hash: string }; Returns: string };
+      demo_uploads_used: { Args: { p_workspace_id: string }; Returns: number };
       finish_demo_sandbox_cleanup: {
         Args: { p_ids: string[] };
         Returns: number;
+      };
+      get_sandbox_billing: {
+        Args: { p_workspace_id: string };
+        Returns: {
+          free_slug: string;
+          kind: string;
+        }[];
       };
       project_update_recipients: {
         Args: { p_project_id: string };

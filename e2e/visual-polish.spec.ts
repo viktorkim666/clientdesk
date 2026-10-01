@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { login } from "./support/auth";
-import { startDemo } from "./support/demo";
+import { startSharedDemo } from "./support/demo";
 
 test.describe("logo mark", () => {
   test("the cards are white in dark mode, like icon.svg", async ({ page }) => {
@@ -80,7 +80,7 @@ test.describe("tap targets on a phone", () => {
   test("dashboard, project and members controls are at least 44px tall", async ({
     page,
   }) => {
-    const base = await startDemo(page, "agency");
+    const base = await startSharedDemo(page, "agency");
     await expect(page.getByRole("main")).toBeVisible();
     expect(await smallTargets(page), "dashboard").toEqual([]);
 
@@ -97,7 +97,7 @@ test.describe("select options on a phone", () => {
   test.use({ viewport: { width: 375, height: 812 } });
 
   test("are as tall as the trigger they open from", async ({ page }) => {
-    const base = await startDemo(page, "agency");
+    const base = await startSharedDemo(page, "agency");
     await openFirstProject(page, base);
 
     await page
@@ -121,7 +121,7 @@ test.describe("dialog close button on a phone", () => {
   test("sits inside the dialog corner without covering the title", async ({
     page,
   }) => {
-    const base = await startDemo(page, "agency");
+    const base = await startSharedDemo(page, "agency");
     await page.goto(`${base}/projects`);
     await page
       .getByRole("button", { name: "New project", exact: true })
@@ -189,7 +189,7 @@ test.describe("control sizes on desktop", () => {
       DESKTOP_HEIGHTS.defaultControl,
     ]);
 
-    const base = await startDemo(page, "agency");
+    const base = await startSharedDemo(page, "agency");
     await openFirstProject(page, base);
     const post = await page
       .getByRole("button", { name: "Post update", exact: true })
@@ -207,7 +207,7 @@ test.describe("project files", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    const base = await startDemo(page, "agency");
+    const base = await startSharedDemo(page, "agency");
     await openFirstProject(page, base);
 
     const rows = page
@@ -260,7 +260,7 @@ test.describe("project files", () => {
 
   test("Download and Delete look like buttons on desktop", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    const base = await startDemo(page, "agency");
+    const base = await startSharedDemo(page, "agency");
     await openFirstProject(page, base);
 
     const row = page
@@ -297,7 +297,7 @@ for (const width of [1440, 375]) {
     test("the name lines up with its avatar and Remove is a labelled destructive button", async ({
       page,
     }) => {
-      const base = await startDemo(page, "agency");
+      const base = await startSharedDemo(page, "agency");
       await page.goto(`${base}/settings/members`);
       const row = page.getByRole("row", { name: /^Priya Nair/ });
       await expect(row).toBeVisible();
@@ -455,7 +455,7 @@ test.describe("sidebar footer", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await startDemo(page, "agency");
+    await startSharedDemo(page, "agency");
 
     const account = page.getByRole("button", { name: "Account" });
     const name = account.getByText("Maya Chen", { exact: true });
@@ -473,7 +473,7 @@ test.describe("sidebar footer", () => {
 
   test("a demo client sees their company below the name", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await startDemo(page, "client");
+    await startSharedDemo(page, "client");
 
     const account = page.getByRole("button", { name: "Account" });
     await expect(account).toHaveAccessibleName(
@@ -498,7 +498,7 @@ test.describe("account menu", () => {
   test("a demo user's trigger name ends with the role, and the menu hides the sandbox email", async ({
     page,
   }) => {
-    await startDemo(page, "agency");
+    await startSharedDemo(page, "agency");
 
     const account = page.getByRole("button", { name: "Account" });
     await expect(account).toHaveAccessibleName(
@@ -549,7 +549,7 @@ test.describe("dashboard metrics", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await startDemo(page, "agency");
+    await startSharedDemo(page, "agency");
 
     const titles = metricTitles(page);
     await expect(titles).toHaveCount(3);
@@ -571,7 +571,7 @@ test.describe("dashboard metrics", () => {
 
   test("show the full labels on desktop", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await startDemo(page, "agency");
+    await startSharedDemo(page, "agency");
 
     await expect(
       page.getByRole("main").getByText("Active projects", { exact: true }),

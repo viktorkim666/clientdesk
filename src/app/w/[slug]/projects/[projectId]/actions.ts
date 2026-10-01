@@ -8,7 +8,11 @@ import { env } from "@/lib/env";
 import { projectStatusSchema } from "@/lib/validation/project";
 import { updateSchema } from "@/lib/validation/update";
 import { commentSchema } from "@/lib/validation/comment";
-import { fileMetadataSchema } from "@/lib/validation/file";
+import {
+  DEMO_UPLOAD_ERROR_CODE,
+  demoUploadErrorMessage,
+  fileMetadataSchema,
+} from "@/lib/validation/file";
 import {
   parseStoragePath,
   PROJECT_FILES_BUCKET,
@@ -307,7 +311,14 @@ export async function registerFile(
   });
 
   if (insertError) {
-    return { ok: false, error: "Could not save the file" };
+    // A demo sandbox's own limits (the file trigger's CD005) get their own
+    // message; the uploader normally catches these first, so this is for a
+    // count it could not see (a client's view of the sandbox's uploads).
+    const demoMessage =
+      insertError.code === DEMO_UPLOAD_ERROR_CODE
+        ? demoUploadErrorMessage(insertError.message)
+        : null;
+    return { ok: false, error: demoMessage ?? "Could not save the file" };
   }
 
   revalidatePath(projectPath(workspaceSlug, projectId));

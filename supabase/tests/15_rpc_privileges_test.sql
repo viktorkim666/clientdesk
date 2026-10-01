@@ -77,6 +77,10 @@ SELECT ok(
   'authenticated has EXECUTE on private.can_access_storage_object'
 );
 SELECT ok(
+  has_function_privilege('authenticated', 'private.demo_storage_insert_allowed(text)', 'EXECUTE'),
+  'authenticated has EXECUTE on private.demo_storage_insert_allowed'
+);
+SELECT ok(
   has_function_privilege('authenticated', 'private.can_view_profile(uuid)', 'EXECUTE'),
   'authenticated has EXECUTE on private.can_view_profile'
 );
@@ -107,6 +111,7 @@ WHERE n.nspname = 'private'
     'private.is_staff(uuid)',
     'private.can_read_project(uuid)',
     'private.can_access_storage_object(text)',
+    'private.demo_storage_insert_allowed(text)',
     'private.can_view_profile(uuid)',
     'private.storage_path_uuid(text,integer)'
   );

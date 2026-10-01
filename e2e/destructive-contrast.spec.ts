@@ -1,5 +1,5 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
-import { startDemo } from "./support/demo";
+import { startSharedDemo } from "./support/demo";
 import { backgroundStack, contrastRatio } from "./support/contrast";
 
 const MIN_CONTRAST = 4.5;
@@ -18,7 +18,7 @@ for (const scheme of ["light", "dark"] as const) {
   test.describe(`destructive button in ${scheme} mode`, () => {
     test.beforeEach(async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });
-      const base = await startDemo(page, "agency");
+      const base = await startSharedDemo(page, "agency");
       await page.goto(`${base}/settings/members`);
       await expect(page.locator("html")).toHaveClass(
         scheme === "dark" ? /dark/ : /^(?!.*dark)/,

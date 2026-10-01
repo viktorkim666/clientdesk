@@ -46,8 +46,17 @@ function stub({
   updates = [],
   comments = [],
   files = [],
-}: { updates?: Row[]; comments?: Row[]; files?: Row[] } = {}) {
+  demoUploadsUsed = null,
+  demoUploadsError = null,
+}: {
+  updates?: Row[];
+  comments?: Row[];
+  files?: Row[];
+  demoUploadsUsed?: number | null;
+  demoUploadsError?: Error | null;
+} = {}) {
   const selects: Record<string, string> = {};
+  const rpcCalls: { fn: string; args: unknown }[] = [];
   const chain = (table: string, columns: string, result: unknown) => {
     selects[table] = columns;
     const node: Record<string, unknown> = {
@@ -94,8 +103,15 @@ function stub({
         }
       },
     }),
+    rpc: (fn: string, args: unknown) => {
+      rpcCalls.push({ fn, args });
+      return Promise.resolve({
+        data: demoUploadsUsed,
+        error: demoUploadsError,
+      });
+    },
   });
-  return selects;
+  return Object.assign(selects, { rpcCalls });
 }
 
 async function render() {
@@ -303,5 +319,38 @@ describe("ProjectPage", () => {
     expect(html).toContain('placeholder="Post an update for the client..."');
     expect(html).toContain('placeholder="Write a comment..."');
     expect(html.match(/data-slot="textarea"/g)?.length).toBe(2);
+  });
+
+  it("shows the file limits of a sandbox in the uploader hint", async () => {
+    const selects = stub({ demoUploadsUsed: 2 });
+    const html = await render();
+
+    expect(text(html)).toContain(
+      "Demo: up to 5 files, 2 MB each, images or PDF",
+    );
+    expect(selects.rpcCalls).toEqual([
+      { fn: "demo_uploads_used", args: { p_workspace_id: WORKSPACE_ID } },
+    ]);
+  });
+
+  it("tells a sandbox visitor who used all 5 uploads that the limit is reached", async () => {
+    stub({ demoUploadsUsed: 5 });
+    const html = await render();
+
+    expect(text(html)).toContain("Demo limit reached: 5 uploads.");
+  });
+
+  it("shows no demo hint when the workspace is not in a sandbox", async () => {
+    stub({ demoUploadsUsed: null });
+    const html = await render();
+
+    expect(text(html)).not.toContain("Demo:");
+    expect(text(html)).not.toContain("Demo limit reached");
+  });
+
+  it("throws when the upload count cannot be read, instead of hiding the limit", async () => {
+    stub({ demoUploadsError: new Error("rpc failed") });
+
+    await expect(render()).rejects.toThrow("rpc failed");
   });
 });

@@ -1,12 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
-import { startDemo } from "./support/demo";
+import { startDemo, startSharedDemo } from "./support/demo";
 
 const banner = (page: Page) =>
   page.getByRole("region", { name: "Demo workspace" });
 
 test.describe("demo sandbox", () => {
   test("Try as agency lands signed in as the owner", async ({ page }) => {
-    await startDemo(page, "agency");
+    await startSharedDemo(page, "agency");
 
     await expect(banner(page)).toContainText(
       "Viewing as Maya Chen (agency owner)",
@@ -24,7 +24,7 @@ test.describe("demo sandbox", () => {
   test("Try as client lands signed in as Priya, who sees only her projects", async ({
     page,
   }) => {
-    await startDemo(page, "client");
+    await startSharedDemo(page, "client");
 
     await expect(banner(page)).toContainText(
       "Viewing as Priya Nair (client, Acme Bakery)",
@@ -49,7 +49,7 @@ test.describe("demo sandbox", () => {
   test("the banner switches between the agency and client views", async ({
     page,
   }) => {
-    await startDemo(page, "agency");
+    await startSharedDemo(page, "agency");
     const workspaceUrl = page.url();
 
     await page.getByRole("button", { name: "Switch to client view" }).click();
@@ -112,7 +112,7 @@ test.describe("demo sandbox", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await startDemo(page, "agency");
+    await startSharedDemo(page, "agency");
 
     // Only the short line is shown; the long wording is hidden on a phone.
     await expect(
