@@ -62,10 +62,17 @@ function workspace(role: "owner" | "member" | "client") {
   };
 }
 
-/** A `supabase.from("workspace_billing")`/`.from("clients")` stub good
- * enough for the page's post-sync `Promise.all` read. */
+type SandboxRow = { kind: string; free_slug: string | null };
+
+/** A `supabase.from("workspace_billing")`/`.from("clients")` and
+ * `.rpc("get_sandbox_billing")` stub good enough for the page's post-sync
+ * `Promise.all` read. `sandbox` is what the function returns: no row outside
+ * a sandbox. */
 function mainSupabase(options?: {
   clientCount?: number;
+  sandbox?: SandboxRow | null;
+  sandboxError?: Error | null;
+  rpcCalls?: { fn: string; args: unknown }[];
   billingRow?: {
     subscription_status: string | null;
     current_period_end: string | null;
@@ -73,6 +80,13 @@ function mainSupabase(options?: {
   } | null;
 }) {
   return {
+    rpc: (fn: string, args: unknown) => {
+      options?.rpcCalls?.push({ fn, args });
+      return Promise.resolve({
+        data: options?.sandbox ? [options.sandbox] : [],
+        error: options?.sandboxError ?? null,
+      });
+    },
     from: (table: string) => {
       if (table === "workspace_billing") {
         return {
@@ -389,6 +403,147 @@ describe("BillingPage", () => {
       expect(ownerHtml).toContain('aria-label="Upgrade to Pro"');
       expect(ownerHtml).toContain('aria-label="Resync"');
       expect(memberHtml).not.toContain('aria-label="Upgrade to Pro"');
+    });
+  });
+
+  describe("inside a demo sandbox", () => {
+    const FREE_SLUG = "northwind-labs-ab12";
+    const NOTE =
+      "This demo workspace is on Pro, so every feature is unlocked. To try checkout, open Northwind Labs, the Free workspace in this demo.";
+    const PRO_ROW = {
+      subscription_status: "active",
+      current_period_end: null,
+      cancel_at: null,
+    };
+
+    let sandboxRow: SandboxRow = { kind: "pro", free_slug: FREE_SLUG };
+
+    async function render(role: "owner" | "member") {
+      getCurrentWorkspaceMock.mockResolvedValue(workspace(role));
+      createClientMock.mockResolvedValue(
+        mainSupabase({ billingRow: PRO_ROW, sandbox: sandboxRow }),
+      );
+      const result = await BillingPage({
+        params: Promise.resolve({ slug: WORKSPACE_SLUG }),
+        searchParams: Promise.resolve({}),
+      });
+      return renderToStaticMarkup(result);
+    }
+
+    async function renderFree(role: "owner" | "member") {
+      getCurrentWorkspaceMock.mockResolvedValue(workspace(role));
+      createClientMock.mockResolvedValue(
+        mainSupabase({ sandbox: { kind: "free", free_slug: null } }),
+      );
+      const result = await BillingPage({
+        params: Promise.resolve({ slug: WORKSPACE_SLUG }),
+        searchParams: Promise.resolve({}),
+      });
+      return renderToStaticMarkup(result);
+    }
+
+    const text = (html: string) =>
+      html
+        .replace(/<!-- -->/g, "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .replace(/ ,/g, ",")
+        .replace(/ \./g, ".");
+
+    it("asks the database for the sandbox kind of the current workspace under the user's own client", async () => {
+      const rpcCalls: { fn: string; args: unknown }[] = [];
+      getCurrentWorkspaceMock.mockResolvedValue(workspace("owner"));
+      createClientMock.mockResolvedValue(mainSupabase({ rpcCalls }));
+
+      await BillingPage({
+        params: Promise.resolve({ slug: WORKSPACE_SLUG }),
+        searchParams: Promise.resolve({}),
+      });
+
+      expect(rpcCalls).toEqual([
+        { fn: "get_sandbox_billing", args: { p_workspace_id: WORKSPACE_ID } },
+      ]);
+    });
+
+    it("throws when the sandbox lookup fails, instead of showing the regular billing page", async () => {
+      getCurrentWorkspaceMock.mockResolvedValue(workspace("owner"));
+      createClientMock.mockResolvedValue(
+        mainSupabase({ sandboxError: new Error("rpc failed") }),
+      );
+
+      await expect(
+        BillingPage({
+          params: Promise.resolve({ slug: WORKSPACE_SLUG }),
+          searchParams: Promise.resolve({}),
+        }),
+      ).rejects.toThrow("rpc failed");
+    });
+
+    describe("on the Pro workspace", () => {
+      beforeEach(() => {
+        sandboxRow = { kind: "pro", free_slug: FREE_SLUG };
+      });
+
+      it("explains the Pro plan and links to the Free workspace billing page", async () => {
+        const html = await render("owner");
+
+        expect(text(html)).toContain(NOTE);
+        expect(html).toMatch(
+          new RegExp(
+            `<a[^>]*href="/w/${FREE_SLUG}/settings/billing"[^>]*>Northwind Labs</a>`,
+          ),
+        );
+      });
+
+      it("shows no Upgrade, Manage or Resync button, even to the owner", async () => {
+        const html = await render("owner");
+
+        expect(html).not.toContain("<button");
+        expect(html).not.toContain("Billing is not configured.");
+      });
+
+      it("shows a member the same note and nothing to act on", async () => {
+        const html = await render("member");
+
+        expect(text(html)).toContain(NOTE);
+        expect(html).not.toContain("<button");
+      });
+
+      it("keeps the plan card with the Pro badge", async () => {
+        const html = await render("owner");
+
+        expect(html).toMatch(/<h2[^>]*>Plan\s*<span[^>]*>Pro<\/span><\/h2>/);
+      });
+
+      it("still tells the visitor about Pro when the Free workspace cannot be found, without a broken link", async () => {
+        sandboxRow = { kind: "pro", free_slug: null };
+
+        const html = await render("owner");
+
+        expect(text(html)).toContain(
+          "This demo workspace is on Pro, so every feature is unlocked.",
+        );
+        expect(html).not.toContain("<a ");
+      });
+    });
+
+    describe("on the Free workspace", () => {
+      it("keeps Upgrade and shows the test-card note once, in the existing Test mode card", async () => {
+        const html = await renderFree("owner");
+
+        expect(html).toContain('aria-label="Upgrade to Pro"');
+        expect(text(html).match(/4242 4242 4242 4242/g)).toHaveLength(1);
+        expect(text(html)).not.toContain("This demo workspace is on Pro");
+      });
+
+      it("keeps a member read-only, with no hint to act on", async () => {
+        const html = await renderFree("member");
+
+        expect(html).not.toContain('aria-label="Upgrade to Pro"');
+        expect(text(html)).toContain(
+          "Only the workspace owner can change the plan.",
+        );
+      });
     });
   });
 });
