@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { REPLY_BUTTON_NAME, REPLY_TEXTAREA_LABEL } from "./support/workspace";
 import { startDemo, startSharedDemo } from "./support/demo";
 
 const banner = (page: Page) =>
@@ -83,7 +84,8 @@ test.describe("demo sandbox", () => {
       .getByRole("table")
       .getByRole("link", { name: "Website redesign", exact: true })
       .click();
-    await page.getByLabel("Write a comment").first().fill(comment);
+    await page.getByRole("button", { name: REPLY_BUTTON_NAME }).first().click();
+    await page.getByLabel(REPLY_TEXTAREA_LABEL).first().fill(comment);
     await page
       .getByRole("button", { name: "Comment", exact: true })
       .first()
@@ -102,8 +104,10 @@ test.describe("demo sandbox", () => {
       .getByRole("table")
       .getByRole("link", { name: "Website redesign", exact: true })
       .click();
-    // The project is loaded (its update forms are there) and the comment is not.
-    await expect(otherPage.getByLabel("Write a comment").first()).toBeVisible();
+    // The project is loaded (its Reply buttons are there) and the comment is not.
+    await expect(
+      otherPage.getByRole("button", { name: REPLY_BUTTON_NAME }).first(),
+    ).toBeVisible();
     await expect(otherPage.getByText(comment)).toHaveCount(0);
     await other.close();
   });

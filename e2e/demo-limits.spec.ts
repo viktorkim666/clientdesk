@@ -97,7 +97,7 @@ test.describe("demo upload limits", () => {
     await openFirstProject(page, workspacePath);
 
     await expect(
-      page.getByText("Demo: up to 5 files, 2 MB each, images or PDF"),
+      page.getByText("Demo: up to 5\u00a0files, 2\u00a0MB each, images or PDF"),
     ).toBeVisible();
 
     const input = page.locator('input[type="file"]');

@@ -68,6 +68,12 @@ export async function createProjectAndOpen(
   return page.url();
 }
 
+/** The Reply button of an update is named after the update's author. */
+export const REPLY_BUTTON_NAME = /^Reply to .+'s update$/;
+
+/** The reply textarea is labelled with the same author. */
+export const REPLY_TEXTAREA_LABEL = /^Write a reply to .+'s update$/;
+
 /** On a project page: posts one update, one comment on it and uploads a PDF. */
 export async function fillProjectPage(page: Page) {
   await page
@@ -76,6 +82,7 @@ export async function fillProjectPage(page: Page) {
   await page.getByRole("button", { name: "Post update" }).click();
   await expect(page.getByText("Design review is done.")).toBeVisible();
 
+  await page.getByRole("button", { name: REPLY_BUTTON_NAME }).click();
   await page.getByPlaceholder("Write a comment...").fill("Looks good to me.");
   await page.getByRole("button", { name: "Comment", exact: true }).click();
   await expect(page.getByText("Looks good to me.")).toBeVisible();

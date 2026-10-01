@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { REPLY_BUTTON_NAME } from "./support/workspace";
 import { login } from "./support/auth";
 import {
   readLastInviteUrlFor,
@@ -120,6 +121,7 @@ test.describe("AI draft update", () => {
 
     // The client comments, rounding out this project's recent activity.
     await clientPage.goto(projectUrl);
+    await clientPage.getByRole("button", { name: REPLY_BUTTON_NAME }).click();
     await clientPage.getByPlaceholder("Write a comment...").fill(commentBody);
     await clientPage
       .getByRole("button", { name: "Comment", exact: true })
