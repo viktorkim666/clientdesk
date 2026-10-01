@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandMark } from "@/components/brand-mark";
+import { MobileMenu } from "@/components/landing/mobile-menu";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -23,14 +24,16 @@ export function SiteHeader() {
           </a>
         </nav>
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
-          <ThemeToggle />
-          {/* The hero and the closing panel carry Log in too; here it would
-              overflow at 320px. */}
+          <div className="max-md:hidden">
+            <ThemeToggle />
+          </div>
+          {/* Below md, Log in and the theme toggle live in the mobile menu,
+              next to the section links that are hidden here too. */}
           <Link
             href="/login"
             className={buttonVariants({
               variant: "ghost",
-              className: "max-sm:hidden",
+              className: "max-md:hidden",
             })}
           >
             Log in
@@ -38,6 +41,7 @@ export function SiteHeader() {
           <Link href="/signup" className={buttonVariants()}>
             Sign up
           </Link>
+          <MobileMenu />
         </div>
       </div>
     </header>
