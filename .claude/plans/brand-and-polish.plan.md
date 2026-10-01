@@ -111,6 +111,8 @@ Deferred by the owner:
 - labels for the comment delete button
 - a switcher that doesn't look interactive for a client with one workspace
 
+All four of these are done now, on the `fix/ui-nits` branch.
+
 ## Follow-ups for "Demo and launch"
 
 From the database review of the demo seed:
