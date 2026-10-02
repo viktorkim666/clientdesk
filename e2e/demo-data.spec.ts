@@ -59,7 +59,7 @@ test.describe("demo workspace", () => {
       "Harbor Yoga",
       "Fernhill Books",
     ]) {
-      await expect(page.getByRole("cell", { name })).toBeVisible();
+      await expect(page.getByRole("cell", { name, exact: true })).toBeVisible();
     }
   });
 

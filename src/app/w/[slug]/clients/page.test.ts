@@ -51,6 +51,8 @@ describe("ClientsPage", () => {
         name: string;
         created_at: string;
         projects: { count: number }[];
+        workspace_members: { count: number }[];
+        invitations: { accepted_at: string | null; expires_at: string }[];
       }[];
     }>();
     const billingDeferred = deferred<{ count: number }>();
@@ -110,6 +112,8 @@ describe("ClientsPage", () => {
           name: "Client One Co.",
           created_at: "2026-03-03T10:00:00Z",
           projects: [{ count: 0 }],
+          workspace_members: [{ count: 0 }],
+          invitations: [],
         },
       ],
     });
@@ -211,22 +215,66 @@ describe("ClientsPage", () => {
       name,
       created_at: "2026-03-03T10:00:00Z",
       projects: [{ count }],
+      workspace_members: [{ count: 0 }],
+      invitations: [],
     });
     const newClientButtons = (html: string) =>
       html.match(/<button[^>]*>New client<\/button>/g) ?? [];
 
-    it("renders the header, the project count and the added date from the existing select", async () => {
+    it("renders the header, the project count and the added date from the select", async () => {
       const selects = stub([client("c1", "Acme Co.", 3)], null);
       const html = await render();
 
       expect(html).toMatch(/<h1[^>]*>Clients<\/h1>\s*<p[^>]*>[^<]+<\/p>/);
-      expect(selects).toEqual(["id, name, created_at, projects(count)"]);
+      expect(selects).toEqual([
+        "id, name, created_at, projects(count), workspace_members(count), invitations(accepted_at, expires_at)",
+      ]);
       expect(html).toMatch(/<th[^>]*>Projects<\/th>/);
       expect(html).toMatch(/<th[^>]*>Added<\/th>/);
       expect(html).toMatch(/<td[^>]*>[^]*Acme Co\.<\/span><\/td>/);
       expect(text(html)).toContain("3");
       expect(text(html)).toContain("Mar 3, 2026");
       expect(newClientButtons(html)).toHaveLength(1);
+    });
+
+    it("gives staff a menu named after each client, in an actions column", async () => {
+      stub([client("c1", "Acme Co.", 0), client("c2", "Globex", 0)], null);
+      const html = await render();
+
+      expect(html).toContain('aria-label="Actions for Acme Co."');
+      expect(html).toContain('aria-label="Actions for Globex"');
+      expect(html).toMatch(/<th[^>]*><span[^>]*>Actions<\/span><\/th>/);
+    });
+
+    it("gives a member the same menus", async () => {
+      getCurrentWorkspaceMock.mockResolvedValue({
+        ...workspace(),
+        role: "member",
+      });
+      stub([client("c1", "Acme Co.", 0)], null);
+      const html = await render();
+
+      expect(html).toContain('aria-label="Actions for Acme Co."');
+    });
+
+    it("gives a client-role viewer no actions column", async () => {
+      getCurrentWorkspaceMock.mockResolvedValue({
+        ...workspace(),
+        role: "client",
+      });
+      stub([client("c1", "Acme Co.", 0)], null);
+      const html = await render();
+
+      expect(html).not.toContain("Actions for");
+      expect(html).not.toContain(">Actions<");
+      expect(html.match(/<th[ >]/g)).toHaveLength(3);
+    });
+
+    it("keeps the usage count equal to the number of clients", async () => {
+      stub([client("c1", "A", 4), client("c2", "B", 0)], null);
+      const html = await render();
+
+      expect(text(html)).toContain("2 / 2 clients used.");
     });
 
     it("shows the Free usage text and an accessible progress bar", async () => {

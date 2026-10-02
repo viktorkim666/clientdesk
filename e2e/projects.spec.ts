@@ -94,7 +94,7 @@ test.describe("end-to-end project flow", () => {
       await page.getByRole("button", { name: "New client" }).click();
       await page.getByLabel("Client name").fill(name);
       await page.getByRole("button", { name: "Create", exact: true }).click();
-      await expect(page.getByRole("cell", { name })).toBeVisible();
+      await expect(page.getByRole("cell", { name, exact: true })).toBeVisible();
     }
 
     await page.getByRole("link", { name: "Projects" }).click();

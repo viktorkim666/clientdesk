@@ -17,6 +17,8 @@ import { formatDate } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentWorkspace } from "@/lib/workspace/current";
 import { FREE_CLIENT_LIMIT, planFromStatus } from "@/lib/billing/plan";
+import { pendingInvitationCount } from "./client-delete-state";
+import { ClientRowActions } from "./client-row-actions";
 import { NewClientDialog } from "./new-client-dialog";
 
 export default async function ClientsPage({
@@ -31,7 +33,9 @@ export default async function ClientsPage({
   const [clientsResult, billingResult] = await Promise.all([
     supabase
       .from("clients")
-      .select("id, name, created_at, projects(count)")
+      .select(
+        "id, name, created_at, projects(count), workspace_members(count), invitations(accepted_at, expires_at)",
+      )
       .eq("workspace_id", workspace.id)
       .order("created_at", { ascending: true }),
     supabase
@@ -45,7 +49,12 @@ export default async function ClientsPage({
   if (billingResult.error) throw billingResult.error;
 
   const clients = clientsResult.data ?? [];
-  const canManage = workspace.role === "owner" || workspace.role === "member";
+  const viewerRole =
+    workspace.role === "owner" || workspace.role === "member"
+      ? workspace.role
+      : null;
+  const canManage = viewerRole !== null;
+  const now = new Date();
   const clientCount = clients.length;
   const plan = planFromStatus(billingResult.data?.subscription_status ?? null);
   const atFreeLimit = plan === "free" && clientCount >= FREE_CLIENT_LIMIT;
@@ -119,6 +128,11 @@ export default async function ClientsPage({
                 <TableHead>Name</TableHead>
                 <TableHead>Projects</TableHead>
                 <TableHead className="hidden sm:table-cell">Added</TableHead>
+                {viewerRole ? (
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                ) : null}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -134,6 +148,25 @@ export default async function ClientsPage({
                   <TableCell className="hidden text-muted-foreground sm:table-cell">
                     {formatDate(client.created_at)}
                   </TableCell>
+                  {viewerRole ? (
+                    <TableCell className="text-right">
+                      <ClientRowActions
+                        workspaceId={workspace.id}
+                        workspaceSlug={workspace.slug}
+                        viewerRole={viewerRole}
+                        client={{
+                          id: client.id,
+                          name: client.name,
+                          projectCount: client.projects[0]?.count ?? 0,
+                          peopleCount: client.workspace_members[0]?.count ?? 0,
+                          pendingInvitations: pendingInvitationCount(
+                            client.invitations,
+                            now,
+                          ),
+                        }}
+                      />
+                    </TableCell>
+                  ) : null}
                 </TableRow>
               ))}
             </TableBody>

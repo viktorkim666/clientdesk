@@ -22,7 +22,7 @@ test.describe("staff flow", () => {
     await page.getByLabel("Client name").fill("Acme Client Co.");
     await page.getByRole("button", { name: "Create", exact: true }).click();
     await expect(
-      page.getByRole("cell", { name: "Acme Client Co." }),
+      page.getByRole("cell", { name: "Acme Client Co.", exact: true }),
     ).toBeVisible();
 
     await page.getByRole("link", { name: "Projects" }).click();
@@ -34,7 +34,7 @@ test.describe("staff flow", () => {
       page.getByRole("cell", { name: "Website Redesign" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("cell", { name: "Acme Client Co." }),
+      page.getByRole("cell", { name: "Acme Client Co.", exact: true }),
     ).toBeVisible();
   });
 });

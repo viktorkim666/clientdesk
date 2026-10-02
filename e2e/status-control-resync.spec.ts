@@ -27,7 +27,7 @@ test.describe("a project's stale status resyncs after an in-place revalidation",
     await page.getByLabel("Client name").fill("Resync Client Co.");
     await page.getByRole("button", { name: "Create", exact: true }).click();
     await expect(
-      page.getByRole("cell", { name: "Resync Client Co." }),
+      page.getByRole("cell", { name: "Resync Client Co.", exact: true }),
     ).toBeVisible();
 
     await page.getByRole("link", { name: "Projects" }).click();

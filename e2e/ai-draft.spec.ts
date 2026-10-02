@@ -45,7 +45,9 @@ test.describe("AI draft update", () => {
     await page.getByRole("button", { name: "New client" }).click();
     await page.getByLabel("Client name").fill(clientName);
     await page.getByRole("button", { name: "Create", exact: true }).click();
-    await expect(page.getByRole("cell", { name: clientName })).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: clientName, exact: true }),
+    ).toBeVisible();
 
     await page.getByRole("link", { name: "Projects" }).click();
     await page.getByRole("button", { name: "New project" }).click();
@@ -204,7 +206,9 @@ test.describe("AI draft update", () => {
     await page.getByRole("button", { name: "New client" }).click();
     await page.getByLabel("Client name").fill(clientName);
     await page.getByRole("button", { name: "Create", exact: true }).click();
-    await expect(page.getByRole("cell", { name: clientName })).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: clientName, exact: true }),
+    ).toBeVisible();
 
     await page.getByRole("link", { name: "Projects" }).click();
     await page.getByRole("button", { name: "New project" }).click();
@@ -253,7 +257,9 @@ test.describe("AI draft update", () => {
     await page.getByRole("button", { name: "New client" }).click();
     await page.getByLabel("Client name").fill(clientName);
     await page.getByRole("button", { name: "Create", exact: true }).click();
-    await expect(page.getByRole("cell", { name: clientName })).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: clientName, exact: true }),
+    ).toBeVisible();
 
     await page.getByRole("link", { name: "Projects" }).click();
     await page.getByRole("button", { name: "New project" }).click();

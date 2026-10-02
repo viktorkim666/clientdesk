@@ -43,7 +43,9 @@ export async function createClientViaDialog(
   await page.getByLabel("Client name").fill(clientName);
   await page.getByRole("button", { name: "Create", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(page.getByRole("cell", { name: clientName })).toBeVisible();
+  await expect(
+    page.getByRole("cell", { name: clientName, exact: true }),
+  ).toBeVisible();
 }
 
 /**

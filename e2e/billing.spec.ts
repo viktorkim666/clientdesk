@@ -29,7 +29,7 @@ test.describe("billing", () => {
       await page.getByRole("button", { name: "New client" }).click();
       await page.getByLabel("Client name").fill(name);
       await page.getByRole("button", { name: "Create", exact: true }).click();
-      await expect(page.getByRole("cell", { name })).toBeVisible();
+      await expect(page.getByRole("cell", { name, exact: true })).toBeVisible();
     }
     await expect(page.getByText("2 / 2 clients used.")).toBeVisible();
 
@@ -45,7 +45,7 @@ test.describe("billing", () => {
         ),
     ).toBeVisible();
     await expect(
-      page.getByRole("cell", { name: "Client Three Co." }),
+      page.getByRole("cell", { name: "Client Three Co.", exact: true }),
     ).toHaveCount(0);
     await page.keyboard.press("Escape");
 
