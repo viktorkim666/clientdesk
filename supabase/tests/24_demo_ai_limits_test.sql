@@ -114,15 +114,17 @@ SELECT throws_ok(
   'requests older than 24 hours still count toward the sandbox limit'
 );
 
--- Deleting the project (and the client) removes the draft request rows but
--- not the ledger, so the visitor cannot start over by recreating them.
+-- Deleting the project (and the client) clears the draft requests' project
+-- reference and leaves the ledger alone, so the visitor cannot start over by
+-- recreating them.
 RESET ROLE;
 DELETE FROM public.projects WHERE id = 'd6000000-0000-0000-0000-00000000000a';
 DELETE FROM public.clients WHERE id = 'c6000000-0000-0000-0000-00000000000a';
 SELECT is(
-  (SELECT count(*)::int FROM public.ai_draft_requests WHERE workspace_id = 'a6000000-0000-0000-0000-00000000000a'),
-  0,
-  'fixture: deleting the project removed its draft request rows'
+  (SELECT count(*)::int FROM public.ai_draft_requests
+     WHERE workspace_id = 'a6000000-0000-0000-0000-00000000000a' AND project_id IS NULL),
+  3,
+  'fixture: deleting the project kept its draft request rows, with a null project'
 );
 INSERT INTO public.clients (id, workspace_id, name)
 VALUES ('c6000000-0000-0000-0000-0000000000f1', 'a6000000-0000-0000-0000-00000000000a', 'Replacement client');
