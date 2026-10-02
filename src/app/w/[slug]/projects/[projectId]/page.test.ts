@@ -24,6 +24,7 @@ vi.mock("./actions", () => ({
   deleteComment: vi.fn(),
   registerFile: vi.fn(),
   deleteFile: vi.fn(),
+  deleteProject: vi.fn(),
   getDownloadUrl: vi.fn(),
 }));
 
@@ -48,14 +49,21 @@ function stub({
   files = [],
   demoUploadsUsed = null,
   demoUploadsError = null,
+  counts = { updates: 0, comments: 0, files: 0 },
 }: {
   updates?: Row[];
   comments?: Row[];
   files?: Row[];
   demoUploadsUsed?: number | null;
   demoUploadsError?: Error | null;
+  counts?: { updates: number; comments: number; files: number };
 } = {}) {
   const selects: Record<string, string> = {};
+  // The head queries the delete dialog's counts come from, by table.
+  const countQueries: Record<
+    string,
+    { columns: string; filters: unknown[][] }
+  > = {};
   const rpcCalls: { fn: string; args: unknown }[] = [];
   const chain = (table: string, columns: string, result: unknown) => {
     selects[table] = columns;
@@ -71,7 +79,25 @@ function stub({
   };
   createClientMock.mockResolvedValue({
     from: (table: string) => ({
-      select: (columns: string) => {
+      select: (columns: string, options?: { head?: boolean }) => {
+        if (options?.head) {
+          const count = {
+            project_updates: counts.updates,
+            update_comments: counts.comments,
+            project_files: counts.files,
+          }[table];
+          const query = { columns, filters: [] as unknown[][] };
+          countQueries[table] = query;
+          const node: Record<string, unknown> = {
+            eq: (...args: unknown[]) => {
+              query.filters.push(args);
+              return node;
+            },
+            then: (resolve: (value: unknown) => unknown) =>
+              resolve({ count, error: null }),
+          };
+          return node;
+        }
         switch (table) {
           case "projects":
             return chain(table, columns, {
@@ -111,7 +137,7 @@ function stub({
       });
     },
   });
-  return Object.assign(selects, { rpcCalls });
+  return Object.assign(selects, { rpcCalls, countQueries });
 }
 
 async function render() {
@@ -235,6 +261,46 @@ describe("ProjectPage", () => {
 
     expect(html).toContain('aria-label="Project status"');
     expect(html).toContain('role="combobox"');
+  });
+
+  it("gives staff a Delete project button and counts what it would remove", async () => {
+    const selects = stub({ counts: { updates: 3, comments: 5, files: 2 } });
+    const html = await render();
+
+    expect(html).toMatch(
+      /<button[^>]*data-slot="alert-dialog-trigger"[^>]*>[^]*Delete project<\/button>/,
+    );
+    expect(selects.countQueries).toEqual({
+      project_updates: {
+        columns: "id",
+        filters: [["project_id", PROJECT_ID]],
+      },
+      update_comments: {
+        columns: "id",
+        filters: [["project_id", PROJECT_ID]],
+      },
+      project_files: {
+        columns: "id",
+        filters: [["project_id", PROJECT_ID]],
+      },
+    });
+  });
+
+  it("gives a member the Delete project button too", async () => {
+    getCurrentWorkspaceMock.mockResolvedValue(workspace("member"));
+    stub();
+    const html = await render();
+
+    expect(text(html)).toContain("Delete project");
+  });
+
+  it("shows a client no Delete project button and does not count what it would remove", async () => {
+    getCurrentWorkspaceMock.mockResolvedValue(workspace("client"));
+    const selects = stub();
+    const html = await render();
+
+    expect(text(html)).not.toContain("Delete project");
+    expect(selects.countQueries).toEqual({});
   });
 
   it("gives a client a status badge instead of the combobox", async () => {

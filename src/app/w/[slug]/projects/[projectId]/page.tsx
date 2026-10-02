@@ -20,6 +20,7 @@ import { UpdateForm } from "./update-form";
 import { UpdatesList, type UpdateWithComments } from "./updates-list";
 import { FileUploader } from "./file-uploader";
 import { FILES_HEADING_ID, FileList, type ProjectFileRow } from "./file-list";
+import { DeleteProjectDialog } from "./delete-project-dialog";
 
 // A non-UUID `projectId` makes Postgres raise "invalid input syntax for
 // type uuid" (SQLSTATE 22P02) on the `.eq("id", projectId)` comparison
@@ -102,22 +103,53 @@ export default async function ProjectPage({
     p_workspace_id: workspace.id,
   });
 
+  // What deleting the project would remove, for the confirmation text. The
+  // lists above are capped (50 updates, 100 files) and the comments are only
+  // read for those updates, so the totals come from head-only counts. Only
+  // staff can delete, so only staff pay for them.
+  const countQuery = (
+    table: "project_updates" | "update_comments" | "project_files",
+  ) =>
+    isStaff
+      ? supabase
+          .from(table)
+          .select("id", { count: "exact", head: true })
+          .eq("project_id", project.id)
+      : null;
+
   const [
     billingResult,
     { data: members },
     { data: updateRows },
     { data: fileRows },
     { data: demoUploadsUsed, error: demoUploadsError },
+    updateCountResult,
+    commentCountResult,
+    fileCountResult,
   ] = await Promise.all([
     billingQuery,
     membersQuery,
     updatesQuery,
     filesQuery,
     demoUploadsQuery,
+    countQuery("project_updates"),
+    countQuery("update_comments"),
+    countQuery("project_files"),
   ]);
 
   if (demoUploadsError) {
     throw demoUploadsError;
+  }
+  // A wrong zero would tell the user a project is empty, so a failed count
+  // fails the page instead.
+  for (const countResult of [
+    updateCountResult,
+    commentCountResult,
+    fileCountResult,
+  ]) {
+    if (countResult?.error) {
+      throw countResult.error;
+    }
   }
 
   let plan: ReturnType<typeof planFromStatus> = "free";
@@ -223,14 +255,28 @@ export default async function ProjectPage({
             <span>Created {formatDate(project.created_at)}</span>
           </p>
         </div>
-        <div className="shrink-0">
+        <div className="flex shrink-0 flex-wrap items-start gap-2">
           {isStaff ? (
-            <StatusControl
-              workspaceId={workspace.id}
-              workspaceSlug={workspace.slug}
-              projectId={project.id}
-              status={project.status}
-            />
+            <>
+              <StatusControl
+                workspaceId={workspace.id}
+                workspaceSlug={workspace.slug}
+                projectId={project.id}
+                status={project.status}
+              />
+              <DeleteProjectDialog
+                workspaceId={workspace.id}
+                workspaceSlug={workspace.slug}
+                projectId={project.id}
+                projectName={project.name}
+                clientName={project.clients?.name ?? null}
+                counts={{
+                  updates: updateCountResult?.count ?? 0,
+                  comments: commentCountResult?.count ?? 0,
+                  files: fileCountResult?.count ?? 0,
+                }}
+              />
+            </>
           ) : (
             <StatusBadge status={project.status} />
           )}

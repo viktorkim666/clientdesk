@@ -8,7 +8,7 @@ export const PROJECT_FILES_BUCKET = "project-files";
 
 const uuidSchema = z.uuid();
 
-function isUuid(value: string): boolean {
+export function isUuid(value: string): boolean {
   return uuidSchema.safeParse(value).success;
 }
 

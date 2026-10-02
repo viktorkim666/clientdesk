@@ -9,3 +9,13 @@ export function slugify(text: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
+
+/**
+ * Whether `text` has the alphabet of a slug create_workspace() generates
+ * (slugify's output, a hyphen and a hex suffix). A Server Action receives its
+ * slug from the caller, and it ends up in revalidatePath() and redirect(), so
+ * it is checked first.
+ */
+export function isWorkspaceSlug(text: string): boolean {
+  return /^[a-z0-9-]+$/.test(text);
+}

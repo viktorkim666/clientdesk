@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { slugify } from "@/lib/slug";
+import { isWorkspaceSlug, slugify } from "@/lib/slug";
 
 describe("slugify", () => {
   it("lowercases and hyphenates spaces", () => {
@@ -20,5 +20,27 @@ describe("slugify", () => {
 
   it("returns an empty string for input with no alphanumeric characters", () => {
     expect(slugify("!!!")).toBe("");
+  });
+});
+
+describe("isWorkspaceSlug", () => {
+  it.each(["acme-agency", "acme-agency-3f9a1c", "studio-54", "-3f9a1c"])(
+    "accepts %j, a shape create_workspace() can produce",
+    (slug) => {
+      expect(isWorkspaceSlug(slug)).toBe(true);
+    },
+  );
+
+  it.each([
+    "",
+    "acme/agency",
+    "../acme",
+    "Acme",
+    "acme agency",
+    "acme?x=1",
+    "acme\n",
+    "acme-agéncy",
+  ])("rejects %j", (slug) => {
+    expect(isWorkspaceSlug(slug)).toBe(false);
   });
 });
