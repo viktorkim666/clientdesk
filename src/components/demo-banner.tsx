@@ -81,7 +81,7 @@ export function DemoBanner({
           <span className="sm:hidden">{shortLabel}</span>
           <span className="hidden sm:inline">{label}</span>
         </p>
-        <p className="text-foreground/70">Resets within 24 hours</p>
+        <p className="text-foreground/70">Expires 24 hours after you start</p>
       </div>
       {switchLabel && switchShortLabel ? (
         <form action={formAction} className="shrink-0">

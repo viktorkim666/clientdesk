@@ -12,7 +12,9 @@ test.describe("demo sandbox", () => {
     await expect(banner(page)).toContainText(
       "Viewing as Maya Chen (agency owner)",
     );
-    await expect(banner(page)).toContainText("Resets within 24 hours");
+    await expect(banner(page)).toContainText(
+      "Expires 24 hours after you start",
+    );
     await expect(
       page.getByRole("button", { name: "Switch to client view" }),
     ).toBeVisible();
@@ -126,7 +128,7 @@ test.describe("demo sandbox", () => {
       banner(page).getByText("Viewing as Maya Chen (agency owner)"),
     ).toBeHidden();
     await expect(
-      banner(page).getByText("Resets within 24 hours"),
+      banner(page).getByText("Expires 24 hours after you start"),
     ).toBeVisible();
     const button = page.getByRole("button", { name: "Switch to client view" });
     await expect(button).toBeVisible();
