@@ -14,7 +14,7 @@
 -- result. What's asserted below is that the function's behavior within a
 -- single transaction is unchanged by adding the lock.
 BEGIN;
-SELECT plan(23);
+SELECT plan(24);
 
 -- workspace: a0000000-0000-0000-0000-000000000001 (seeded, no billing row -> free)
 -- project A (client A): d0000000-0000-0000-0000-00000000000a
@@ -278,20 +278,42 @@ SELECT throws_ok(
   'a project_id/workspace_id pair that does not match a real project is rejected'
 );
 
--- Cascade: deleting the project a row belongs to deletes the row too. Run
--- last in this file, since it removes project A that every earlier test
--- above depends on.
+-- Deleting a project keeps its draft requests with a null project, so the
+-- limits still count them: the rows are the ledger the two limits above
+-- count, and a delete must not hand the quota back. Run last in this file,
+-- since it removes project A that every earlier test above depends on.
+-- Back-date everything out of both windows, then seed 50 workspace claims on
+-- project A inside the day but outside the member's hour.
+RESET ROLE;
+UPDATE public.ai_draft_requests
+  SET created_at = now() - interval '25 hours'
+  WHERE workspace_id = 'a0000000-0000-0000-0000-000000000001';
 SELECT lives_ok(
-  $$ insert into public.ai_draft_requests (workspace_id, user_id, project_id)
-       values ('a0000000-0000-0000-0000-000000000001', '00000001-0000-0000-0000-000000000001',
-               'd0000000-0000-0000-0000-00000000000a') $$,
-  'seeding one more row on project A to prove cascade delete removes it'
+  $$ insert into public.ai_draft_requests (workspace_id, user_id, project_id, created_at)
+       select 'a0000000-0000-0000-0000-000000000001', '00000001-0000-0000-0000-000000000001',
+              'd0000000-0000-0000-0000-00000000000a', now() - interval '2 hours'
+       from generate_series(1, 50) $$,
+  'seeding 50 workspace claims on project A in the last day'
 );
 DELETE FROM public.projects WHERE id = 'd0000000-0000-0000-0000-00000000000a';
 SELECT is(
-  (SELECT count(*)::int FROM public.ai_draft_requests WHERE project_id = 'd0000000-0000-0000-0000-00000000000a'),
-  0,
-  'deleting a project cascades to its ai_draft_requests rows'
+  (SELECT count(*)::int FROM public.ai_draft_requests
+     WHERE workspace_id = 'a0000000-0000-0000-0000-000000000001'
+       AND project_id IS NULL
+       AND created_at > now() - interval '24 hours'),
+  50,
+  'deleting a project keeps its draft requests with a null project, so the limits still count them'
+);
+
+-- The workspace limit counts them: the member, with no claims of their own
+-- in the last hour, is refused on project B, which still exists.
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims TO '{"sub":"00000002-0000-0000-0000-000000000002","email":"member@clientdesk.test","role":"authenticated"}';
+SELECT throws_ok(
+  $$ select public.claim_ai_draft('d0000000-0000-0000-0000-00000000000b') $$,
+  'CD003'::char(5),
+  'ai_rate_limited',
+  'the workspace limit still counts the draft requests of a deleted project'
 );
 
 SELECT * FROM finish();
