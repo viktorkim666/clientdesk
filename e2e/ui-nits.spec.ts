@@ -386,3 +386,28 @@ test.describe("single workspace", () => {
     ).toHaveCount(0);
   });
 });
+
+test.describe("account menu", () => {
+  test("the Sign out item is as wide as the theme items", async ({ page }) => {
+    await signUpOwnerWithEmptyWorkspace(
+      page,
+      "signout-width",
+      test.info().workerIndex,
+    );
+    await page.getByRole("button", { name: "Account" }).click();
+
+    const light = page.getByRole("menuitemradio", { name: "Light" });
+    const signOut = page.getByRole("menuitem", { name: "Sign out" });
+
+    // The menu zooms in when it opens, so the two widths are read together
+    // until the animation settles.
+    await expect
+      .poll(async () => {
+        const lightBox = await light.boundingBox();
+        const signOutBox = await signOut.boundingBox();
+        if (!lightBox || !signOutBox) return Number.POSITIVE_INFINITY;
+        return Math.abs(signOutBox.width - lightBox.width);
+      })
+      .toBeLessThanOrEqual(1);
+  });
+});
