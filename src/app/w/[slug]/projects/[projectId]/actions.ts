@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoWorkspace } from "@/lib/demo/is-demo-workspace";
 import { getEmailSender } from "@/lib/email";
 import { env } from "@/lib/env";
+import { isWorkspaceSlug } from "@/lib/slug";
 import { projectStatusSchema } from "@/lib/validation/project";
 import { updateSchema } from "@/lib/validation/update";
 import { commentSchema } from "@/lib/validation/comment";
@@ -14,6 +16,7 @@ import {
   fileMetadataSchema,
 } from "@/lib/validation/file";
 import {
+  isUuid,
   parseStoragePath,
   PROJECT_FILES_BUCKET,
 } from "@/lib/files/storage-path";
@@ -25,6 +28,16 @@ import {
 type FileMetadataCandidate = { name: string; size: number; mimeType: string };
 
 const DOWNLOAD_URL_TTL_SECONDS = 60;
+
+// Storage `remove` takes a list; a few hundred paths in one request is a
+// needlessly big URL/body, so the paths go in batches. Same size as the demo
+// cleanup, which keeps its constant private to an admin-only module.
+const STORAGE_BATCH_SIZE = 100;
+// `list` returns 100 entries by default; asking for it explicitly keeps the
+// "a short page is the last page" check tied to the number sent.
+const STORAGE_LIST_PAGE_SIZE = 100;
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 export type ActionResult = { ok: true } | { ok: false; error: string };
 export type PostUpdateResult =
@@ -362,6 +375,199 @@ export async function deleteFile(
 
   revalidatePath(projectPath(workspaceSlug, projectId));
   return { ok: true };
+}
+
+// Every object under `prefix`, however deep: Storage lists one level at a
+// time and shows a folder as an entry with a null `id`. Returns null when a
+// listing fails, because a partial list would leave objects behind.
+async function listObjectPaths(
+  supabase: SupabaseServerClient,
+  prefix: string,
+): Promise<string[] | null> {
+  const bucket = supabase.storage.from(PROJECT_FILES_BUCKET);
+  const paths: string[] = [];
+
+  for (let offset = 0; ; offset += STORAGE_LIST_PAGE_SIZE) {
+    const { data, error } = await bucket.list(prefix, {
+      limit: STORAGE_LIST_PAGE_SIZE,
+      offset,
+    });
+    if (error) {
+      console.error("deleteProject action: storage list failed", error);
+      return null;
+    }
+
+    for (const entry of data) {
+      const path = `${prefix}/${entry.name}`;
+      if (entry.id === null) {
+        const nested = await listObjectPaths(supabase, path);
+        if (!nested) {
+          return null;
+        }
+        paths.push(...nested);
+      } else {
+        paths.push(path);
+      }
+    }
+
+    if (data.length < STORAGE_LIST_PAGE_SIZE) {
+      return paths;
+    }
+  }
+}
+
+const PROJECT_NOT_FOUND = "Project not found";
+const PROJECT_NOT_DELETED =
+  "Could not delete the project. Nothing was removed.";
+const PROJECT_PARTLY_DELETED =
+  "Some files were deleted, but the project was not. Try again.";
+
+// Deletes a project, its updates and comments (the database cascades), and
+// its Storage objects. Storage goes first: `remove` needs the caller's select
+// right on the object, and that policy reads the project row, which is gone
+// once the row is deleted.
+export async function deleteProject(
+  workspaceId: string,
+  workspaceSlug: string,
+  projectId: string,
+): Promise<ActionResult> {
+  // Both ids are looked up and then used to build a Storage prefix, and the
+  // slug goes into revalidatePath() and redirect(), so anything that is not a
+  // UUID (a "../" for one) or a slug is turned away before any query.
+  if (
+    !isUuid(workspaceId) ||
+    !isUuid(projectId) ||
+    !isWorkspaceSlug(workspaceSlug)
+  ) {
+    return { ok: false, error: PROJECT_NOT_FOUND };
+  }
+
+  const supabase = await createClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  if (!claims) {
+    return { ok: false, error: "You must be signed in" };
+  }
+
+  // Row level security would refuse a client's row delete, but only after
+  // the Storage removal below, which a client's own select right allows. So
+  // the role is checked first.
+  const { data: membership, error: membershipError } = await supabase
+    .from("workspace_members")
+    .select("role")
+    .eq("workspace_id", workspaceId)
+    .eq("user_id", claims.claims.sub)
+    .maybeSingle();
+
+  if (membershipError) {
+    console.error("deleteProject action: role lookup failed", membershipError);
+    return { ok: false, error: PROJECT_NOT_DELETED };
+  }
+  if (!membership || membership.role === "client") {
+    return { ok: false, error: PROJECT_NOT_DELETED };
+  }
+
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id, workspace_id")
+    .eq("id", projectId)
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+
+  if (projectError) {
+    console.error("deleteProject action: project lookup failed", projectError);
+    return { ok: false, error: PROJECT_NOT_DELETED };
+  }
+  if (!project) {
+    return { ok: false, error: PROJECT_NOT_FOUND };
+  }
+
+  // The listing is the only source of paths: it sees every object under the
+  // project folder, with or without a file row. A file row whose object does
+  // not exist has nothing to remove and goes with the cascade. The prefix
+  // comes from the stored ids: Postgres matches a UUID in any case, Storage
+  // paths are case-sensitive, so the caller's spelling could miss every object.
+  const paths = await listObjectPaths(
+    supabase,
+    `${project.workspace_id}/${project.id}`,
+  );
+  if (!paths) {
+    return { ok: false, error: PROJECT_NOT_DELETED };
+  }
+
+  const removed: string[] = [];
+  let failed = false;
+  for (let start = 0; start < paths.length; start += STORAGE_BATCH_SIZE) {
+    const batch = paths.slice(start, start + STORAGE_BATCH_SIZE);
+    const { data, error } = await supabase.storage
+      .from(PROJECT_FILES_BUCKET)
+      .remove(batch);
+
+    // `remove` answers with the objects it removed, so a path of this batch
+    // missing from the answer is still there, even without an error. Counting
+    // the answer would let other paths stand in for the missing ones.
+    const removedNames = new Set((data ?? []).map((object) => object.name));
+    const removedFromBatch = batch.filter((path) => removedNames.has(path));
+    removed.push(...removedFromBatch);
+    if (error || removedFromBatch.length < batch.length) {
+      console.error("deleteProject action: storage remove failed", {
+        error,
+        batchSize: batch.length,
+        removed: removedFromBatch.length,
+      });
+      failed = true;
+      break;
+    }
+  }
+
+  let deleted = false;
+  if (!failed) {
+    const { data: deletedRows, error: deleteError } = await supabase
+      .from("projects")
+      .delete()
+      .eq("id", projectId)
+      .eq("workspace_id", workspaceId)
+      .select("id");
+
+    deleted = !deleteError && (deletedRows ?? []).length > 0;
+    if (!deleted) {
+      console.error(
+        "deleteProject action: project delete failed",
+        deleteError ?? "no row deleted",
+      );
+    }
+  }
+
+  if (failed || !deleted) {
+    if (removed.length === 0) {
+      return { ok: false, error: PROJECT_NOT_DELETED };
+    }
+
+    // Some objects are gone but the project stays. Dropping their file rows
+    // keeps the Files list true (no row whose download fails), and a retry
+    // lists again, so it only has the rest to remove.
+    for (let start = 0; start < removed.length; start += STORAGE_BATCH_SIZE) {
+      const { error } = await supabase
+        .from("project_files")
+        .delete()
+        .eq("project_id", projectId)
+        .eq("workspace_id", workspaceId)
+        .in("storage_path", removed.slice(start, start + STORAGE_BATCH_SIZE));
+      if (error) {
+        console.error("deleteProject action: file rows cleanup failed", error);
+      }
+    }
+    revalidatePath(projectPath(workspaceSlug, projectId));
+    return { ok: false, error: PROJECT_PARTLY_DELETED };
+  }
+
+  const projectsPath = `/w/${workspaceSlug}/projects`;
+  revalidatePath(projectsPath);
+  revalidatePath(`/w/${workspaceSlug}`);
+  revalidatePath(`/w/${workspaceSlug}/clients`);
+  // The open page would turn into a 404 on revalidation before the browser
+  // navigates, so the redirect comes from here, outside any try/catch:
+  // redirect() throws NEXT_REDIRECT.
+  redirect(projectsPath);
 }
 
 export async function getDownloadUrl(
