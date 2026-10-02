@@ -36,10 +36,10 @@ describe("DemoBanner", () => {
     expect(html).toMatch(/<section[^>]*aria-label="Demo workspace"/);
   });
 
-  it("says it is a demo, who is viewing, and when it resets", () => {
+  it("says it is a demo, who is viewing, and when it expires", () => {
     expect(html).toContain("Demo workspace");
     expect(html).toContain("Viewing as Maya Chen (agency owner)");
-    expect(html).toContain("Resets within 24 hours");
+    expect(html).toContain("Expires 24 hours after you start");
   });
 
   it("offers the switch as a submit button", () => {
@@ -73,8 +73,8 @@ describe("DemoBanner on a phone", () => {
     expect(html).toMatch(/class="[^"]*sm:hidden[^"]*">Demo</);
   });
 
-  it("keeps the reset note visible on a phone, in a text color that passes contrast", () => {
-    const note = classOf(html, "Resets within 24 hours");
+  it("keeps the expiry note visible on a phone, in a text color that passes contrast", () => {
+    const note = classOf(html, "Expires 24 hours after you start");
 
     expect(note).not.toContain("hidden");
     expect(note).toContain("text-foreground/70");
