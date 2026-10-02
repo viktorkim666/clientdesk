@@ -89,7 +89,7 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
-              className="max-md:min-h-11"
+              className="w-full max-md:min-h-11"
               closeOnClick={false}
               nativeButton
               disabled={isPending}
