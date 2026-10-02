@@ -16,7 +16,7 @@ To see billing, open the billing page and follow the link to the Free workspace 
 
 ## What it does
 
-- Workspaces with an owner, members and clients. Staff manage clients and projects; a client sees only the projects of their own company.
+- Workspaces with an owner, members and clients. Staff manage clients and projects; a client sees only the projects of their own company. Staff can rename a client, delete a client that has no projects and no people, and delete a project.
 - Projects with updates, comments and file uploads.
 - AI update drafts: on a Pro workspace, staff click "Draft update" and Claude writes a client update from the last 7 days of activity. The text streams into the form and is edited before posting.
 - Billing through Stripe Checkout and the Customer Portal. Free allows 2 clients; Pro removes the limit and unlocks AI drafts.
@@ -36,6 +36,8 @@ To see billing, open the billing page and follow the link to the Free workspace 
 ## How it is built
 
 - Access rules live in Postgres. Every read goes through row level security, so a client only sees their own projects and the activity on them. pgTAP tests cover the policies.
+- A client with projects or people cannot be deleted. Foreign keys enforce that, and the app explains what to remove first. Deleting a client frees a Free plan slot at once.
+- Deleting a project removes its Storage objects first and then the row, which takes the updates, comments and file rows with it. AI draft request rows stay, with no project, so deleting a project does not reset the draft limits. If Storage fails halfway the project stays and a retry finishes. A file uploaded in the moment between the listing and the delete is left in Storage with no row.
 - Limits are enforced in the database: the Free plan's 2 clients, AI draft claims per user and per workspace, and the caps on demo sandboxes, their drafts and their uploads.
 - A demo click creates four users through the Supabase admin API, clones the template workspace in one SQL function and signs the visitor in on the server with a one-time magic-link token. A daily cron deletes expired sandboxes with their users, files and Stripe test customers.
 - Stripe is the source of truth for plan state. The webhook, the post-checkout redirect and the owner's Resync button all re-read the subscription from Stripe.
@@ -240,6 +242,9 @@ pnpm build
 - pgTAP demo upload limits: `supabase/tests/25_demo_upload_limits_test.sql` tests file count, size and type limits, the ledger that survives file deletion, and the storage policy cap
 - pgTAP demo usage cleanup: `supabase/tests/26_demo_usage_cleanup_test.sql` tests the cleanup functions, the demo usage ledgers and the helper RPCs
 - demo limits: `e2e/demo-limits.spec.ts` tests the AI draft limit with a sample, upload limits with PNG, oversized, and type refusal, and the storage cap
+- client management: `e2e/client-manage.spec.ts` tests renaming a client, deleting an empty one with the Free slot coming back, the explanation for a client with projects or people, and focus after each dialog
+- project deletion: `e2e/project-delete.spec.ts` tests the typed-name confirmation, that the project's Storage objects are gone afterwards (including one with no file row), and that a client user has no Delete project button
+- pgTAP clients and projects: `supabase/tests/02_clients_test.sql` and `03_projects_test.sql` test who may rename and delete, that projects and people block a client delete, and that a project's updates, comments, files and draft requests go with it
 - demo billing: `e2e/demo-billing.spec.ts` tests that the Pro sandbox notes itself and links to its Free workspace for test checkout
 
 ## Deploy
