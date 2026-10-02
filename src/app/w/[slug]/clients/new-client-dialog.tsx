@@ -16,6 +16,9 @@ import { createClientCompany, type ClientActionResult } from "./actions";
 
 const initialState: ClientActionResult = { ok: true };
 
+// Deleting a client moves focus here, so the row's own button is not needed.
+export const NEW_CLIENT_TRIGGER_ID = "new-client-trigger";
+
 export function NewClientDialog({
   workspaceId,
   workspaceSlug,
@@ -41,7 +44,9 @@ export function NewClientDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" />}>New client</DialogTrigger>
+      <DialogTrigger render={<Button id={NEW_CLIENT_TRIGGER_ID} size="sm" />}>
+        New client
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>New client</DialogTitle>

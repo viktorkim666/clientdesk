@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 import { login } from "./support/auth";
 import {
   buildFilledWorkspace,
@@ -57,6 +57,59 @@ test.describe("mobile layout", () => {
     }
   }
 
+  async function expectAlertDialogFitsViewport(page: Page, label: string) {
+    const box = await page.getByRole("alertdialog").boundingBox();
+    expect(box, `${label}: dialog has no bounding box`).not.toBeNull();
+    if (box) {
+      expect(
+        box.x,
+        `${label}: dialog starts left of the viewport`,
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        box.x + box.width,
+        `${label}: dialog right edge ${box.x + box.width} exceeds viewport width 375`,
+      ).toBeLessThanOrEqual(375);
+    }
+  }
+
+  // Popups zoom in from 95%, which would shrink the measured sizes.
+  async function expectSettled(page: Page) {
+    await expect
+      .poll(() => page.evaluate(() => document.getAnimations().length))
+      .toBe(0);
+  }
+
+  async function expectTarget44(
+    target: Locator,
+    label: string,
+    { width = true }: { width?: boolean } = {},
+  ) {
+    await expect(target, `${label} is visible`).toBeVisible();
+    const box = await target.boundingBox();
+    expect(box, `${label}: no bounding box`).not.toBeNull();
+    if (box) {
+      expect(box.height, `${label} height`).toBeGreaterThanOrEqual(44);
+      if (width) {
+        expect(box.width, `${label} width`).toBeGreaterThanOrEqual(44);
+      }
+    }
+  }
+
+  async function expectInViewport(target: Locator, label: string) {
+    const box = await target.boundingBox();
+    expect(box, `${label}: no bounding box`).not.toBeNull();
+    if (box) {
+      expect(
+        box.x,
+        `${label}: starts left of the viewport`,
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        box.x + box.width,
+        `${label}: right edge ${box.x + box.width} exceeds viewport width 375`,
+      ).toBeLessThanOrEqual(375);
+    }
+  }
+
   async function loginAsProOwner(page: Page) {
     await login(page, PRO_OWNER_EMAIL);
   }
@@ -101,7 +154,73 @@ test.describe("mobile layout", () => {
     await expectDialogFitsViewport(page, "new client dialog");
     await page.getByLabel("Client name").fill(clientName);
     await page.getByRole("button", { name: "Create", exact: true }).click();
-    await expect(page.getByRole("cell", { name: clientName })).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: clientName, exact: true }),
+    ).toBeVisible();
+
+    // The row menu and what it opens: 44px targets, dialogs inside the
+    // viewport, and no sideways scroll.
+    const rowActions = page.getByRole("button", {
+      name: `Actions for ${clientName}`,
+    });
+    await expectTarget44(rowActions, "row actions button");
+    await rowActions.click();
+    await expectSettled(page);
+    await expectNoHorizontalScroll(page, "client row menu");
+    for (const item of ["Rename", "Delete"]) {
+      await expectTarget44(
+        page.getByRole("menuitem", { name: item }),
+        `${item} menu item`,
+        { width: false },
+      );
+    }
+    await expectInViewport(
+      page.getByRole("menu"),
+      "client row menu inside the viewport",
+    );
+    await page.getByRole("menuitem", { name: "Rename" }).click();
+    await expectSettled(page);
+    await expectDialogFitsViewport(page, "rename client dialog");
+    await expectNoHorizontalScroll(page, "rename client dialog");
+    await page.keyboard.press("Escape");
+
+    await rowActions.click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+    await expectSettled(page);
+    await expectAlertDialogFitsViewport(page, "delete client dialog");
+    await expectNoHorizontalScroll(page, "delete client dialog");
+    for (const name of ["Cancel", "Delete client"]) {
+      await expectTarget44(
+        page.getByRole("alertdialog").getByRole("button", { name }),
+        `${name} button`,
+        { width: false },
+      );
+    }
+    await page.getByRole("button", { name: "Cancel" }).click();
+
+    // A 100-character name with no break opportunity wraps in the row and in
+    // the dialog title instead of widening the page.
+    const longName = `Long${suffix}`.padEnd(100, "x");
+    await page.getByRole("button", { name: "New client" }).click();
+    await page.getByLabel("Client name").fill(longName);
+    await page.getByRole("button", { name: "Create", exact: true }).click();
+    const longActions = page.getByRole("button", {
+      name: `Actions for ${longName}`,
+    });
+    await expect(longActions).toBeVisible();
+    await expectNoHorizontalScroll(page, "clients with a long name");
+    await expectInViewport(longActions, "long-name row actions button");
+    await longActions.click();
+    await expect(
+      page.getByRole("menu").getByText(longName),
+      "the menu does not repeat the name",
+    ).toHaveCount(0);
+    await expectInViewport(page.getByRole("menu"), "long-name row menu");
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+    await expectSettled(page);
+    await expectAlertDialogFitsViewport(page, "delete dialog, long name");
+    await expectNoHorizontalScroll(page, "delete dialog, long name");
+    await page.getByRole("button", { name: "Cancel" }).click();
 
     await openNavAndClick(page, "Projects");
     await expectNoHorizontalScroll(page, "projects");
@@ -142,6 +261,29 @@ test.describe("mobile layout", () => {
       await expect(page.getByRole("table").first()).toBeVisible();
       await expectNoHorizontalScroll(page, `populated ${path}`);
     }
+
+    // Seeded Client A Inc. has a project and a person, so Delete explains.
+    await page.goto(`${workspaceUrl}/clients`);
+    const seededActions = page.getByRole("button", {
+      name: "Actions for Client A Inc.",
+    });
+    await expectTarget44(seededActions, "seeded row actions button");
+    await seededActions.click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+    await expectSettled(page);
+    await expectDialogFitsViewport(page, "blocked client dialog");
+    await expectNoHorizontalScroll(page, "blocked client dialog");
+    await expectTarget44(
+      page.getByRole("dialog").getByRole("link", { name: "Open Projects" }),
+      "Open Projects link",
+      { width: false },
+    );
+    await expectTarget44(
+      page.getByRole("dialog").getByRole("button", { name: "Close" }),
+      "blocked dialog Close button",
+      { width: false },
+    );
+    await page.getByRole("button", { name: "Close" }).click();
 
     await page.goto(`${workspaceUrl}/settings/members`);
     const main = page.getByRole("main");
@@ -290,6 +432,48 @@ test.describe("mobile layout", () => {
     // The upload zone is a visible label over the hidden native input.
     await expect(page.getByLabel("Upload a file")).toHaveCount(1);
     await expect(page.getByText("Upload a file")).toBeVisible();
+
+    // The Delete project button and the buttons in its dialog are 44px
+    // targets, and the dialog fits the viewport with its text typed in.
+    const deleteProject = page.getByRole("button", { name: "Delete project" });
+    expect((await deleteProject.boundingBox())?.height).toBeGreaterThanOrEqual(
+      44,
+    );
+    await deleteProject.click();
+    const deleteDialog = page.getByRole("alertdialog");
+    await expect(deleteDialog).toBeVisible();
+    // The dialog zooms in from 95%, which would shrink the measured sizes.
+    await expect
+      .poll(() => page.evaluate(() => document.getAnimations().length))
+      .toBe(0);
+    await deleteDialog
+      .getByLabel("Type the project name to confirm")
+      .fill("Filled Project");
+    for (const name of ["Cancel", "Delete project"]) {
+      const box = await deleteDialog
+        .getByRole("button", { name })
+        .boundingBox();
+      expect(box?.height, `${name} height`).toBeGreaterThanOrEqual(44);
+    }
+    await expectAlertDialogFitsViewport(page, "delete project dialog");
+    await expectNoHorizontalScroll(page, "delete project dialog");
+    await deleteDialog.getByRole("button", { name: "Cancel" }).click();
+
+    // A long name with no break opportunity wraps instead of widening the
+    // page, in the header, the dialog text and the helper line.
+    const longName = `Wrapping-${"long-name-".repeat(10)}end`;
+    await createProjectAndOpen(
+      page,
+      workspaceUrl,
+      longName,
+      "Filled Client Co.",
+    );
+    await expectNoHorizontalScroll(page, "project page with a long name");
+    await page.getByRole("button", { name: "Delete project" }).click();
+    await expect(page.getByRole("alertdialog")).toBeVisible();
+    await expectAlertDialogFitsViewport(page, "delete dialog, long name");
+    await expectNoHorizontalScroll(page, "delete dialog, long name");
+    await page.getByRole("button", { name: "Cancel" }).click();
 
     await page.goto(workspaceUrl);
     await expect(

@@ -23,7 +23,7 @@ test.describe("select triggers show labels, not raw values", () => {
     await page.getByLabel("Client name").fill("Acme Client Co.");
     await page.getByRole("button", { name: "Create", exact: true }).click();
     await expect(
-      page.getByRole("cell", { name: "Acme Client Co." }),
+      page.getByRole("cell", { name: "Acme Client Co.", exact: true }),
     ).toBeVisible();
 
     await page.getByRole("link", { name: "Projects" }).click();
@@ -78,7 +78,7 @@ test.describe("select triggers show labels, not raw values", () => {
     await page.getByLabel("Client name").fill("Beta Client Co.");
     await page.getByRole("button", { name: "Create", exact: true }).click();
     await expect(
-      page.getByRole("cell", { name: "Beta Client Co." }),
+      page.getByRole("cell", { name: "Beta Client Co.", exact: true }),
     ).toBeVisible();
 
     await page.getByRole("link", { name: "Members" }).click();

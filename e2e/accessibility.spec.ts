@@ -126,7 +126,9 @@ for (const colorScheme of ["light", "dark"] as const) {
       await page.getByLabel("Client name").fill(clientName);
       await page.getByRole("button", { name: "Create", exact: true }).click();
       await expect(page.getByRole("dialog")).toHaveCount(0);
-      await expect(page.getByRole("cell", { name: clientName })).toBeVisible();
+      await expect(
+        page.getByRole("cell", { name: clientName, exact: true }),
+      ).toBeVisible();
       await checkAccessibility(page, `clients (${colorScheme})`);
 
       await page.getByRole("link", { name: "Projects" }).click();
@@ -247,6 +249,39 @@ for (const colorScheme of ["light", "dark"] as const) {
       await checkAccessibility(page, `empty clients (${colorScheme})`);
 
       await createClientViaDialog(page, workspaceUrl, "A11y Empty Client");
+      await checkAccessibility(
+        page,
+        `clients with a row to manage (${colorScheme})`,
+      );
+
+      const rowActions = page.getByRole("button", {
+        name: "Actions for A11y Empty Client",
+      });
+      await rowActions.click();
+      await expect(
+        page.getByRole("menuitem", { name: "Rename" }),
+      ).toBeVisible();
+      await checkAccessibility(page, `client row menu (${colorScheme})`);
+      await page.getByRole("menuitem", { name: "Rename" }).click();
+      await expect(
+        page.getByRole("dialog", { name: "Rename client" }),
+      ).toBeVisible();
+      await checkAccessibility(page, `rename client dialog (${colorScheme})`);
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+
+      await rowActions.click();
+      await page.getByRole("menuitem", { name: "Delete" }).click();
+      await expect(
+        page.getByRole("alertdialog", { name: "Delete A11y Empty Client?" }),
+      ).toBeVisible();
+      await checkAccessibility(
+        page,
+        `delete client confirmation (${colorScheme})`,
+      );
+      await page.getByRole("button", { name: "Cancel" }).click();
+      await expect(page.getByRole("alertdialog")).toHaveCount(0);
+
       await page.goto(`${workspaceUrl}/projects`);
       await expect(
         page.getByRole("main").getByText("Start your first project"),
@@ -307,6 +342,39 @@ for (const colorScheme of ["light", "dark"] as const) {
       );
       await page.getByRole("button", { name: "Cancel" }).click();
       await expect(page.getByRole("alertdialog")).toHaveCount(0);
+
+      await page.getByRole("button", { name: "Delete project" }).click();
+      const deleteProjectDialog = page.getByRole("alertdialog");
+      await expect(deleteProjectDialog).toBeVisible();
+      await checkAccessibility(page, `delete project dialog (${colorScheme})`);
+      await deleteProjectDialog
+        .getByLabel("Type the project name to confirm")
+        .fill("Filled Project");
+      await expect(
+        deleteProjectDialog.getByRole("button", { name: "Delete project" }),
+      ).toBeEnabled();
+      await checkAccessibility(
+        page,
+        `delete project dialog with the name typed (${colorScheme})`,
+      );
+      await deleteProjectDialog.getByRole("button", { name: "Cancel" }).click();
+      await expect(page.getByRole("alertdialog")).toHaveCount(0);
+
+      // The filled client has a project, so Delete explains why it can't.
+      await page.goto(`${workspaceUrl}/clients`);
+      await page
+        .getByRole("button", { name: "Actions for Filled Client Co." })
+        .click();
+      await page.getByRole("menuitem", { name: "Delete" }).click();
+      await expect(
+        page.getByRole("dialog", { name: "Can't delete Filled Client Co." }),
+      ).toBeVisible();
+      await checkAccessibility(
+        page,
+        `blocked client delete dialog (${colorScheme})`,
+      );
+      await page.getByRole("button", { name: "Close" }).click();
+      await expect(page.getByRole("dialog")).toHaveCount(0);
 
       await page.goto(workspaceUrl);
       await expect(
